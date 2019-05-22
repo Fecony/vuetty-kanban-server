@@ -44,11 +44,11 @@ export class AuthService {
       email: user.email,
     };
 
-    let jwt = this.jwtService.sign(data);
+    let token = this.jwtService.sign(data);
 
     return {
       expiresIn: 3600,
-      token: jwt,
+      token,
     };
   }
 }
