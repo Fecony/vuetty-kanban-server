@@ -18,13 +18,11 @@ export class UsersService {
   }
 
   async getById(ID: string): Promise<IUser> {
-    if (ID.match(/^[0-9a-fA-F]{24}$/)) {
-      return await this.userModel
-        .findById(ID)
-        .populate('tickets')
-        .select(['-password'])
-        .exec();
-    }
+    return await this.userModel
+      .findById(ID)
+      .populate('tickets')
+      .select(['-password'])
+      .exec();
   }
 
   async findOneByEmail(email: string): Model<IUser> {

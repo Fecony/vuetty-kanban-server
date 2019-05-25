@@ -33,6 +33,7 @@ export class UsersController {
   }
 
   @Post()
+  @UseGuards(AuthGuard())
   async create(@Res() res: any, @Body() body: CreateUserDto) {
     if (!(body && body.email && body.password)) {
       return res
