@@ -1,0 +1,55 @@
+type Query {
+  users: [User]
+  user(id: ID!): User
+}
+
+type Mutation {
+  "Create User"
+  createUser(user: CreateUserInput): User
+  "Update User by id"
+  updateUser(id: ID!, user: UpdateUserInput): User
+  "Delete user"
+  deleteUser(id: ID!): String
+  # pushTicket(id: ID!, ticketId: String): User
+  # login(username: String!, password: String!): Auth
+  # register(username: String!, password: String!): Auth
+}
+
+type Auth {
+  username: String!
+  token: String!
+}
+
+type User {
+  id: ID!
+  role: String
+  email: String
+  username: String
+  firstname: String
+  lastname: String
+  password: String
+  profilePicture: String
+  createdAt: String
+  updatedAt: String
+}
+
+input CreateUserInput {
+  role: String!
+  email: String!
+  username: String!
+  firstname: String!
+  lastname: String!
+  password: String!
+  profilePicture: String
+}
+
+input UpdateUserInput {
+  role: String
+  email: String
+  username: String
+  firstname: String
+  lastname: String
+  password: String
+  profilePicture: String
+  tickets: [String]
+}

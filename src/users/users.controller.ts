@@ -6,6 +6,11 @@ import {
   UseGuards,
   Res,
   HttpStatus,
+  Param,
+  NotFoundException,
+  Put,
+  Query,
+  Delete,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -14,6 +19,18 @@ import { AuthGuard } from '@nestjs/passport';
 @Controller('users')
 export class UsersController {
   constructor(private userService: UsersService) {}
+
+  @Get()
+  async getAll() {
+    return await this.userService.getAll();
+  }
+
+  @Get('/:id')
+  async getById(@Res() res, @Param('id') id) {
+    const user = await this.userService.getById(id);
+    if (!user) throw new NotFoundException('User does not exist!');
+    return res.status(HttpStatus.OK).json(user);
+  }
 
   @Post()
   async create(@Res() res: any, @Body() body: CreateUserDto) {
@@ -38,11 +55,23 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(user);
   }
 
-  @Get('secret')
+  @Put('/update')
   @UseGuards(AuthGuard())
-  testAuthRoute() {
-    return {
-      message: '!!!!secret information!!!!',
-    };
+  async update(
+    @Res() res,
+    @Query('id') id,
+    @Body() createUserDTO: CreateUserDto,
+  ) {
+    const user = await this.userService.update(id, createUserDTO);
+    if (!user) throw new NotFoundException('User does not exist!');
+    return res.status(HttpStatus.OK).json(user);
+  }
+
+  @Delete('/delete')
+  @UseGuards(AuthGuard())
+  async delete(@Res() res, @Query('id') id) {
+    const user = await this.userService.delete(id);
+    if (!user) throw new NotFoundException('User does not exist!');
+    return res.status(HttpStatus.OK).json(user);
   }
 }

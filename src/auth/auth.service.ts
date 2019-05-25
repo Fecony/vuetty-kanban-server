@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { UsersService } from '../users/users.service';
@@ -16,16 +21,22 @@ export class AuthService {
       loginAttempt.email,
     );
 
-    return new Promise(resolve => {
-      userToAttempt.checkPassword(loginAttempt.password, (err, isMatch) => {
-        if (err) throw new UnauthorizedException();
+    return new Promise((resolve, reject) => {
+      userToAttempt.checkPassword(
+        loginAttempt.password,
+        (err: Error, isMatch: boolean) => {
+          if (err)
+            reject(new HttpException('Error occured', HttpStatus.FORBIDDEN));
 
-        if (isMatch) {
-          resolve(this.createJwtPayload(userToAttempt));
-        } else {
-          throw new UnauthorizedException();
-        }
-      });
+          if (isMatch) {
+            resolve(this.createToken(userToAttempt));
+          } else {
+            reject(
+              new HttpException("Password doesn't match", HttpStatus.FORBIDDEN),
+            );
+          }
+        },
+      );
     });
   }
 
@@ -33,13 +44,13 @@ export class AuthService {
     let user = await this.usersService.findOneByEmail(payload.email);
 
     if (user) {
-      return this.createJwtPayload(user);
+      return this.createToken(user);
     } else {
       throw new UnauthorizedException();
     }
   }
 
-  createJwtPayload(user: LoginUserDto) {
+  createToken(user: LoginUserDto) {
     let data: JwtPayload = {
       email: user.email,
     };
