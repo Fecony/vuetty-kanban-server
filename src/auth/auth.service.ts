@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   HttpException,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { LoginUserDto } from '../users/dto/login-user.dto';
@@ -22,21 +23,28 @@ export class AuthService {
     );
 
     return new Promise((resolve, reject) => {
-      userToAttempt.checkPassword(
-        loginAttempt.password,
-        (err: Error, isMatch: boolean) => {
-          if (err)
-            reject(new HttpException('Error occured', HttpStatus.FORBIDDEN));
+      if (userToAttempt) {
+        userToAttempt.checkPassword(
+          loginAttempt.password,
+          (err: Error, isMatch: boolean) => {
+            if (err)
+              reject(new HttpException('Error occured', HttpStatus.FORBIDDEN));
 
-          if (isMatch) {
-            resolve(this.createToken(userToAttempt));
-          } else {
-            reject(
-              new HttpException("Password doesn't match", HttpStatus.FORBIDDEN),
-            );
-          }
-        },
-      );
+            if (isMatch) {
+              resolve(this.createToken(userToAttempt));
+            } else {
+              reject(
+                new HttpException(
+                  "Password doesn't match",
+                  HttpStatus.FORBIDDEN,
+                ),
+              );
+            }
+          },
+        );
+      } else {
+        reject(new NotFoundException("Users doesn't exist!"));
+      }
     });
   }
 

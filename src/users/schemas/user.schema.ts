@@ -1,17 +1,30 @@
 import * as mongoose from 'mongoose';
 import * as bcrypt from 'bcrypt';
 
-export const UserSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    unique: true,
-    required: true,
+export const UserSchema = new mongoose.Schema(
+  {
+    role: { type: String, default: 'junior' },
+    email: {
+      type: String,
+      unique: true,
+      required: true,
+      match: /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/,
+    },
+    password: { type: String, required: true },
+    username: { type: String, required: true },
+    firstname: { type: String, required: true },
+    lastname: { type: String, required: true },
+    profilePicture: String,
+    // tickets: [
+    //   {
+    //     type: mongoose.Schema.ObjectId,
+    //     ref: 'Ticket',
+    //     default: null,
+    //   },
+    // ],
   },
-  password: {
-    type: String,
-    required: true,
-  },
-});
+  { timestamps: true },
+);
 
 UserSchema.pre('save', function(next) {
   let user = this;

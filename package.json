@@ -1,5 +1,5 @@
 {
-  "name": "vuetty-kanban-server-new",
+  "name": "vuetty-kanban-server",
   "version": "0.0.1",
   "description": "Nest.js Backend Server for Kanban App",
   "author": "Richard Tagil",

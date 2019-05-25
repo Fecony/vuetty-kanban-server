@@ -12,24 +12,28 @@ export class UsersService {
   async getAll(): Promise<IUser[]> {
     return await this.userModel
       .find()
+      .populate('tickets')
       .select(['-password'])
       .exec();
   }
 
   async getById(ID: string): Promise<IUser> {
-    return await this.userModel
-      .findById(ID)
-      .select(['-password'])
-      .exec();
+    if (ID.match(/^[0-9a-fA-F]{24}$/)) {
+      return await this.userModel
+        .findById(ID)
+        .populate('tickets')
+        .select(['-password'])
+        .exec();
+    }
   }
 
   async findOneByEmail(email: string): Model<IUser> {
     return await this.userModel.findOne({ email: email });
   }
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto): Promise<IUser> {
     let newUser = new this.userModel(createUserDto);
-    return await newUser.save();
+    return await newUser.populate('tickets').save();
   }
 
   async register(loginUserDTO: LoginUserDto) {
@@ -38,11 +42,10 @@ export class UsersService {
   }
 
   async update(ID: string, createUserDto: IUser): Promise<IUser> {
-    const updatedUser = await this.userModel.findByIdAndUpdate(
-      ID,
-      createUserDto,
-      { new: true },
-    );
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(ID, createUserDto, { new: true })
+      .populate('tickets')
+      .select(['-password']);
     return updatedUser;
   }
 

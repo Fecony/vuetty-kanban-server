@@ -26,9 +26,9 @@ export class UpdateUserInput {
     tickets?: string[];
 }
 
-export class Auth {
-    username: string;
-    token: string;
+export class Deleted {
+    deleted?: boolean;
+    msg?: string;
 }
 
 export abstract class IMutation {
@@ -36,7 +36,7 @@ export abstract class IMutation {
 
     abstract updateUser(id: string, user?: UpdateUserInput): User | Promise<User>;
 
-    abstract deleteUser(id: string): string | Promise<string>;
+    abstract deleteUser(id: string): Deleted | Promise<Deleted>;
 }
 
 export abstract class IQuery {

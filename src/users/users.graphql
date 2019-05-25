@@ -9,15 +9,12 @@ type Mutation {
   "Update User by id"
   updateUser(id: ID!, user: UpdateUserInput): User
   "Delete user"
-  deleteUser(id: ID!): String
-  # pushTicket(id: ID!, ticketId: String): User
-  # login(username: String!, password: String!): Auth
-  # register(username: String!, password: String!): Auth
+  deleteUser(id: ID!): Deleted
 }
 
-type Auth {
-  username: String!
-  token: String!
+type Deleted {
+  deleted: Boolean
+  msg: String
 }
 
 type User {
