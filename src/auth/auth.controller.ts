@@ -18,7 +18,7 @@ export class AuthController {
 
     return await this.authService.validateUserByPassword(body);
   }
-  BadRequestException;
+
   @Post('/register')
   async register(@Body() body: LoginUserDto) {
     if (!(body && body.email && body.password)) {

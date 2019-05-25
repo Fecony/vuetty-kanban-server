@@ -25,7 +25,7 @@ export class UsersController {
     return await this.userService.getAll();
   }
 
-  @Get('/:id')
+  @Get(':id')
   async getById(@Res() res, @Param('id') id) {
     const user = await this.userService.getById(id);
     if (!user) throw new NotFoundException('User does not exist!');
@@ -55,7 +55,7 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(user);
   }
 
-  @Put('/update')
+  @Put('update')
   @UseGuards(AuthGuard())
   async update(
     @Res() res,
@@ -67,7 +67,7 @@ export class UsersController {
     return res.status(HttpStatus.OK).json(user);
   }
 
-  @Delete('/delete')
+  @Delete('delete')
   @UseGuards(AuthGuard())
   async delete(@Res() res, @Query('id') id) {
     const user = await this.userService.delete(id);

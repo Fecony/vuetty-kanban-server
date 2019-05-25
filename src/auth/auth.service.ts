@@ -46,7 +46,7 @@ export class AuthService {
     if (user) {
       return this.createToken(user);
     } else {
-      throw new UnauthorizedException();
+      return new UnauthorizedException();
     }
   }
 
