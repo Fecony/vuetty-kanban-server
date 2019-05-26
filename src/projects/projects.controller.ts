@@ -56,14 +56,12 @@ export class ProjectsController {
   @UseGuards(AuthGuard())
   async addColumn(@Res() res, @Query('id') id, @Body() body) {
     if (body && body.column) {
-      const str = body.column
-        .split(' ')
-        .join('_')
-        .toUpperCase();
-      const result = await this.projectsService.addColumn(id, str);
+      const result = await this.projectsService.addColumn(id, body.column);
       return res.send(result);
     }
-    return res.status(HttpStatus.FORBIDDEN).json({ error: 'Body is empty' });
+    return res
+      .status(HttpStatus.FORBIDDEN)
+      .json({ ok: false, error: 'Body is empty' });
   }
 
   @Delete('delete')
@@ -85,6 +83,8 @@ export class ProjectsController {
       const result = await this.projectsService.deleteColumn(id, str);
       return res.send(result);
     }
-    return res.status(HttpStatus.FORBIDDEN).json({ error: 'Body is empty' });
+    return res
+      .status(HttpStatus.FORBIDDEN)
+      .json({ ok: false, error: 'Body is empty' });
   }
 }

@@ -1,0 +1,39 @@
+type Query {
+  "Get all projects"
+  projects: [Project]
+  "Get Project By ID"
+  project(id: ID!): Project
+}
+
+type Mutation {
+  "Create Project"
+  createProject(project: CreateProjectInput): Project
+  "Update Project by id"
+  updateProject(id: ID!, project: CreateProjectInput): Project
+  "Delete Project"
+  deleteProject(id: ID!): Project
+  "Push new Column to Columns array of Project"
+  addColumn(id: ID!, column: String!): ProjectColumn
+  "Remove column for array for project with ID"
+  deleteColumn(id: ID!, column: String): ProjectColumn
+}
+
+type Project {
+  id: ID!
+  title: String
+  code: String
+  description: String
+  columns: [String]
+  createdAt: String
+  updatedAt: String
+}
+
+input CreateProjectInput {
+  title: String
+  description: String
+}
+
+type ProjectColumn {
+  ok: Boolean!
+  error: String
+}
