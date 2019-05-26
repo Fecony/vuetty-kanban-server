@@ -52,11 +52,39 @@ export class ProjectsController {
     return res.status(HttpStatus.OK).json(project);
   }
 
+  @Put('column')
+  @UseGuards(AuthGuard())
+  async addColumn(@Res() res, @Query('id') id, @Body() body) {
+    if (body && body.column) {
+      const str = body.column
+        .split(' ')
+        .join('_')
+        .toUpperCase();
+      const result = await this.projectsService.addColumn(id, str);
+      return res.send(result);
+    }
+    return res.status(HttpStatus.FORBIDDEN).json({ error: 'Body is empty' });
+  }
+
   @Delete('delete')
   @UseGuards(AuthGuard())
   async delete(@Res() res, @Query('id') id) {
     const project = await this.projectsService.delete(id);
     if (!project) throw new NotFoundException('Project does not exist!');
     return res.status(HttpStatus.OK).json(project);
+  }
+
+  @Delete('column')
+  @UseGuards(AuthGuard())
+  async deleteColumn(@Res() res, @Query('id') id, @Body() body) {
+    if (body && body.column) {
+      const str = body.column
+        .split(' ')
+        .join('_')
+        .toUpperCase();
+      const result = await this.projectsService.deleteColumn(id, str);
+      return res.send(result);
+    }
+    return res.status(HttpStatus.FORBIDDEN).json({ error: 'Body is empty' });
   }
 }

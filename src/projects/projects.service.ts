@@ -25,6 +25,60 @@ export class ProjectsService {
     return newProject.save();
   }
 
+  async addColumn(ID: string, body: string): Promise<object> {
+    let result = this.projectModel
+      .findOne({ _id: ID }) // Search if projects exists
+      .find({ columns: body }) // Search if column is there already
+      .then(doc => {
+        // If column is not here
+        if (doc.length <= 0) {
+          let result = this.projectModel
+            .updateOne(
+              { _id: ID },
+              { $push: { columns: body } }, // Push new column to [columns]
+            )
+            .then(() => {
+              return { ok: true };
+            })
+            .catch(() => {
+              return { error: 'Something happened' };
+            });
+          return result;
+        } else {
+          return { error: 'Column Already exists' };
+        }
+      })
+      .catch(() => {
+        return { error: 'Something happened' };
+      });
+    return result;
+  }
+
+  async deleteColumn(ID: string, body: string): Promise<object> {
+    let result = await this.projectModel
+      .findOne({ _id: ID })
+      .find({ columns: body }) // Check if project with ID exists, then check if column with that value exists
+      .then(doc => {
+        if (doc.length <= 0) {
+          return { error: `Project with column: ${body} doesn't exist` };
+        }
+        // Remove column from array
+        let result = doc[0]
+          .updateOne({ $pull: { columns: body } })
+          .then(() => {
+            return { ok: true };
+          })
+          .catch(() => {
+            return { error: "Can't update column ." };
+          });
+        return result;
+      })
+      .catch(() => {
+        return { error: 'Something bad happened.' };
+      });
+    return result;
+  }
+
   async update(
     ID: string,
     createProjectDTO: CreateProjectDTO,
