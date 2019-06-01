@@ -24,12 +24,12 @@ export class CreateTicketInput {
 }
 
 export class CreateUserInput {
-    role: string;
+    role?: string;
     email: string;
-    username: string;
+    username?: string;
     firstname: string;
     lastname: string;
-    password: string;
+    password?: string;
     profilePicture?: string;
 }
 
@@ -60,17 +60,17 @@ export abstract class IMutation {
 
     abstract deleteColumn(id: string, column?: string): ProjectColumn | Promise<ProjectColumn>;
 
+    abstract createTicket(ticket?: CreateTicketInput): Ticket | Promise<Ticket>;
+
+    abstract updateTicket(id: string, ticket?: CreateTicketInput): Ticket | Promise<Ticket>;
+
+    abstract deleteTicket(id: string): Ticket | Promise<Ticket>;
+
     abstract createUser(user?: CreateUserInput): User | Promise<User>;
 
     abstract updateUser(id: string, user?: UpdateUserInput): User | Promise<User>;
 
     abstract deleteUser(id: string): Deleted | Promise<Deleted>;
-}
-
-export class Mutations {
-    createTicket?: Ticket;
-    updateTicket?: Ticket;
-    deleteTicket?: Ticket;
 }
 
 export class Project {

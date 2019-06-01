@@ -5,7 +5,7 @@ type Query {
   ticket(id: ID!): Ticket
 }
 
-type Mutations {
+type Mutation {
   "Create Ticket"
   createTicket(ticket: CreateTicketInput): Ticket
   "Update Ticket by ID"

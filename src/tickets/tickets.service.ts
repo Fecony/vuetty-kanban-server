@@ -21,10 +21,11 @@ export class TicketsService {
   }
 
   async getById(ID: string): Promise<ITicket> {
-    return await this.ticketsModel
+    const ticket = await this.ticketsModel
       .findById(ID)
       .populate('author assignee project')
       .exec();
+    return ticket;
   }
 
   async create(createTicketDTO: CreateTicketDTO): Promise<ITicket> {

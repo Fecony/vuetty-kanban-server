@@ -32,12 +32,12 @@ type User {
 }
 
 input CreateUserInput {
-  role: String!
+  role: String
   email: String!
-  username: String!
+  username: String
   firstname: String!
   lastname: String!
-  password: String!
+  password: String
   profilePicture: String
 }
 

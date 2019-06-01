@@ -13,7 +13,7 @@ export class TicketsResolver {
 
   @Query('ticket')
   async getTicket(@Args('id') id: string) {
-    await this.ticketsService.getById(id);
+    return await this.ticketsService.getById(id);
   }
 
   @Mutation('createTicket')
