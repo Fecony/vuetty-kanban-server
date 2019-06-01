@@ -26,6 +26,7 @@ type User {
   lastname: String
   password: String
   profilePicture: String
+  tickets: [Ticket]
   createdAt: String
   updatedAt: String
 }

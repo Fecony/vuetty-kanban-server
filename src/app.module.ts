@@ -9,6 +9,7 @@ import { ConfigService } from './config/config.service';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { join } from 'path';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { join } from 'path';
     UsersModule,
     AuthModule,
     ProjectsModule,
+    TicketsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

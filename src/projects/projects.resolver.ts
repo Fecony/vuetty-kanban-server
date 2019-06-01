@@ -9,12 +9,12 @@ export class ProjectsResolver {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Query('projects')
-  async getUsers() {
+  async getProjects() {
     return await this.projectsService.getAll();
   }
 
   @Query('project')
-  async getUser(@Args('id') id: string) {
+  async getProject(@Args('id') id: string) {
     return await this.projectsService.getById(id);
   }
 

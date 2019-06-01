@@ -1,0 +1,45 @@
+type Query {
+  "Get all tickets"
+  tickets: [Ticket]
+  "Get Ticket by Id"
+  ticket(id: ID!): Ticket
+}
+
+type Mutations {
+  "Create Ticket"
+  createTicket(ticket: CreateTicketInput): Ticket
+  "Update Ticket by ID"
+  updateTicket(id: ID!, ticket: CreateTicketInput): Ticket
+  "Delete Ticket by ID"
+  deleteTicket(id: ID!): Ticket
+}
+
+type Ticket {
+  id: ID!
+  title: String
+  description: String
+  author: User
+  assignee: User
+  status: String
+  due_date: String
+  estimate: String
+  project: Project
+  ticket_code: String
+  attachments: [String]
+  comments: [String]
+  created_at: String
+  updated_at: String
+}
+
+input CreateTicketInput {
+  title: String
+  description: String
+  author: String
+  assignee: String
+  status: String
+  due_date: String
+  estimate: String
+  project: String
+  ticket_code: String
+  attachments: [String]
+}
