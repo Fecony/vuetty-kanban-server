@@ -55,4 +55,11 @@ export class UsersService {
       return { error: 'The user could not be deleted' };
     }
   }
+
+  async setAvatar(ID: string, avatarUrl: string) {
+    const user = await this.userModel.findOneAndUpdate(ID, {
+      profilePicture: avatarUrl,
+    });
+    return user;
+  }
 }

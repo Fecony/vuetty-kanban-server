@@ -11,10 +11,17 @@ import {
   Put,
   Query,
   Delete,
+  UseInterceptors,
+  UploadedFile,
+  Req,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
+const sharp = require('sharp');
 
 @Controller('users')
 export class UsersController {
@@ -74,5 +81,56 @@ export class UsersController {
     const user = await this.userService.delete(id);
     if (!user) throw new NotFoundException('User does not exist!');
     return res.status(HttpStatus.OK).json(user);
+  }
+
+  @Get('avatars/:id')
+  async serveAvatar(@Param('id') id, @Res() res): Promise<any> {
+    res.sendFile(id, { root: 'public/avatars' });
+  }
+
+  @Post(':id/avatar')
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: diskStorage({
+        destination: './public/avatars',
+        filename: (req, file, cb) => {
+          let ext = extname(file.originalname);
+          let filename = file.fieldname + '-' + Date.now() + ext;
+          return cb(null, filename);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        var ext = extname(file.originalname);
+        if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg') {
+          return cb(null, false);
+        }
+        return cb(null, true);
+      },
+    }),
+  )
+  async uploadAvatar(
+    @Req() req,
+    @Res() res,
+    @Param('id') id,
+    @UploadedFile() avatar,
+  ) {
+    const SERVER_URL: string =
+      req.protocol + '://' + req.get('host') + '/users/';
+
+    if (!avatar) {
+      return res
+        .status(HttpStatus.BAD_REQUEST)
+        .json({ ok: false, msg: 'Avatar missing!' });
+    }
+
+    const result = await this.userService.setAvatar(
+      id,
+      `${SERVER_URL}${avatar.path}`,
+    );
+    if (!result) throw new NotFoundException('User does not exist!');
+    return res.status(HttpStatus.OK).json({
+      ok: true,
+      msg: `Avatar created!`,
+    });
   }
 }
