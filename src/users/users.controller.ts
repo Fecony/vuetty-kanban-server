@@ -120,19 +120,12 @@ export class UsersController {
     @Param('id') id,
     @UploadedFile() avatar,
   ) {
-    const SERVER_URL: string =
-      req.protocol + '://' + req.get('host') + '/users/';
-
     if (!avatar) {
       return res
         .status(HttpStatus.BAD_REQUEST)
         .json({ ok: false, msg: 'Avatar missing!' });
     }
-
-    const result = await this.userService.setAvatar(
-      id,
-      `${SERVER_URL}${avatar.path}`,
-    );
+    const result = await this.userService.setAvatar(id, avatar.filename);
     if (!result) throw new NotFoundException('User does not exist!');
     return res.status(HttpStatus.OK).json({
       ok: true,
