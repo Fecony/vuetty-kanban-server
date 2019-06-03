@@ -22,7 +22,8 @@ type Ticket {
   assignee: User
   status: String
   due_date: String
-  estimate: String
+  estimate: Int
+  remaining: Int
   project: Project
   ticket_code: String
   attachments: [String]
@@ -38,7 +39,8 @@ input CreateTicketInput {
   assignee: String
   status: String
   due_date: String
-  estimate: String
+  estimate: Int
+  remaining: Int
   project: String
   ticket_code: String
   attachments: [String]

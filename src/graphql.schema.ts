@@ -17,7 +17,8 @@ export class CreateTicketInput {
     assignee?: string;
     status?: string;
     due_date?: string;
-    estimate?: string;
+    estimate?: number;
+    remaining?: number;
     project?: string;
     ticket_code?: string;
     attachments?: string[];
@@ -110,7 +111,8 @@ export class Ticket {
     assignee?: User;
     status?: string;
     due_date?: string;
-    estimate?: string;
+    estimate?: number;
+    remaining?: number;
     project?: Project;
     ticket_code?: string;
     attachments?: string[];

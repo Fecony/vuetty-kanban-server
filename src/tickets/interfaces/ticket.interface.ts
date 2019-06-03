@@ -9,7 +9,8 @@ export interface ITicket extends Document {
   project: string;
   ticket_code: string;
   due_date: string;
-  estimate: string;
+  estimate: number,
+  remaining: number,
   attachments: string;
   comments: string;
 }

@@ -7,7 +7,8 @@ export class CreateTicketDTO {
   readonly project: string;
   readonly ticket_code: string;
   readonly due_date: string;
-  readonly estimate: string;
+  readonly estimate: number;
+  readonly remaining: number;
   readonly attachments: [string];
   readonly comments: [string];
 }
