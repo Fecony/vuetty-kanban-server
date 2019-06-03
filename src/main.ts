@@ -10,13 +10,15 @@ let bootstrap = async () => {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: true,
   });
+
   const config: ConfigService = app.get(ConfigService);
+  const PORT = config.get('PORT');
+
   app.use(helmet());
   app.useStaticAssets(join(__dirname, '..', 'public'));
-  await app.listen(config.get('PORT'));
-  Logger.log(
-    `Server running on http://localhost:${config.get('PORT')}`,
-    'Bootstrap',
-  );
+
+  await app.listen(PORT, () => {
+    Logger.log(`Server running on http://localhost:${PORT}`, 'Bootstrap');
+  });
 };
 bootstrap();

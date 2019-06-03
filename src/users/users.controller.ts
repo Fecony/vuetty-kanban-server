@@ -14,6 +14,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Req,
+  HttpException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
@@ -21,7 +22,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
-const sharp = require('sharp');
 
 @Controller('users')
 export class UsersController {
@@ -102,7 +102,13 @@ export class UsersController {
       fileFilter: (req, file, cb) => {
         var ext = extname(file.originalname);
         if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg') {
-          return cb(null, false);
+          return cb(
+            new HttpException(
+              'Only images are allowed!',
+              HttpStatus.BAD_REQUEST,
+            ),
+            null,
+          );
         }
         return cb(null, true);
       },

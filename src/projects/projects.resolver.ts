@@ -1,7 +1,7 @@
 import { Resolver, Query, Args, Mutation } from '@nestjs/graphql';
 import { ProjectsService } from './projects.service';
 import { UseGuards } from '@nestjs/common';
-import { GqlAuthGuard } from '../auth/guards/graphql-auth.guard';
+import { GqlAuthGuard } from '../common/guards/graphql-auth.guard';
 import { CreateProjectDTO } from './dto/create-project.dto';
 
 @Resolver('Projects')
