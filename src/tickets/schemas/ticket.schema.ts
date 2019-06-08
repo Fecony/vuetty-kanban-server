@@ -18,7 +18,8 @@ export const TicketSchema = new mongoose.Schema(
       default: 'TO_DO',
     },
     due_date: Date,
-    estimate: String,
+    estimate: Number,
+    remaining: Number,
     project: {
       type: mongoose.Schema.ObjectId,
       required: true,
