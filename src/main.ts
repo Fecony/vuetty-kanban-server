@@ -12,7 +12,7 @@ let bootstrap = async () => {
   });
 
   const config: ConfigService = app.get(ConfigService);
-  const PORT = config.get('PORT');
+  const PORT = config.get('PORT') || 3005;
 
   app.use(helmet());
   app.useStaticAssets(join(__dirname, '..', 'public'));
