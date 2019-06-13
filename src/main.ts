@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from './config/config.service';
-import * as helmet from 'helmet';
+const helmet = require('helmet');
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
