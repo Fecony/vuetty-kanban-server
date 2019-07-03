@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { UsersService } from '../users/users.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -58,14 +59,24 @@ export class AuthService {
     }
   }
 
-  createToken(user: LoginUserDto) {
+  createToken(user: CreateUserDto) {
     let data: JwtPayload = {
       email: user.email,
     };
 
+    let { email, username, firstname, lastname, role, profilePicture } = user;
+    let userData = {
+      email,
+      username,
+      firstname,
+      lastname,
+      role,
+      profilePicture,
+    };
     let token = this.jwtService.sign(data);
 
     return {
+      user: userData,
       expiresIn: 3600,
       token,
     };
