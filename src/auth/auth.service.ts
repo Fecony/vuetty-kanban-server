@@ -59,24 +59,26 @@ export class AuthService {
     }
   }
 
-  createToken(user: CreateUserDto) {
+  createToken(userData: CreateUserDto) {
     let data: JwtPayload = {
-      email: user.email,
+      email: userData.email,
     };
 
-    let { email, username, firstname, lastname, role, profilePicture } = user;
-    let userData = {
+    var user = (({
       email,
       username,
       firstname,
       lastname,
       role,
       profilePicture,
-    };
+    }) => ({ email, username, firstname, lastname, role, profilePicture }))(
+      userData,
+    );
+
     let token = this.jwtService.sign(data);
 
     return {
-      user: userData,
+      user,
       expiresIn: 3600,
       token,
     };
