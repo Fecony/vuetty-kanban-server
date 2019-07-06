@@ -1,57 +1,52 @@
 import {
   Controller,
   Get,
-  Res,
-  HttpStatus,
   Param,
-  NotFoundException,
   Post,
   Body,
   Put,
   Query,
   Delete,
+  UsePipes,
+  UseGuards,
 } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDTO } from './dto/create-ticket.dto';
+import { IdValidation } from '../common/pipes/IdValidation.pipe';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('tickets')
 export class TicketsController {
   constructor(private ticketsService: TicketsService) {}
 
   @Get()
-  async getAll(@Res() res) {
-    const tickets = await this.ticketsService.getAll();
-    return res.status(HttpStatus.OK).json(tickets);
+  async getAll(@Query('page') page: number) {
+    return await this.ticketsService.getAll(page);
   }
 
   @Get(':id')
-  async getById(@Res() res, @Param('id') id) {
-    const ticket = await this.ticketsService.getById(id);
-    if (!ticket) throw new NotFoundException('Ticket does not exist!');
-    return res.status(HttpStatus.OK).json(ticket);
+  @UsePipes(new IdValidation())
+  async getById(@Param('id') id) {
+    return await this.ticketsService.getById(id);
   }
 
   @Post()
-  async create(@Res() res, @Body() createTicketDTO: CreateTicketDTO) {
-    const ticket = await this.ticketsService.create(createTicketDTO);
-    return res.status(HttpStatus.OK).json(ticket);
+  @UseGuards(AuthGuard())
+  async create(@Body() body: CreateTicketDTO) {
+    return await this.ticketsService.create(body);
   }
 
   @Put('update')
-  async update(
-    @Res() res,
-    @Query('id') id,
-    @Body() createTicketDTO: CreateTicketDTO,
-  ) {
-    const ticket = await this.ticketsService.update(id, createTicketDTO);
-    if (!ticket) throw new NotFoundException('Ticket does not exist!');
-    return res.status(HttpStatus.OK).json(ticket);
+  @UseGuards(AuthGuard())
+  @UsePipes(new IdValidation())
+  async update(@Query('id') id, @Body() body: CreateTicketDTO) {
+    return await this.ticketsService.update(id, body);
   }
 
-  @Delete('/delete')
-  async deleteTicket(@Res() res, @Query('id') id) {
-    const ticket = await this.ticketsService.delete(id);
-    if (!ticket) throw new NotFoundException('Ticket does not exist');
-    return res.status(HttpStatus.OK).json(ticket);
+  @Delete('delete')
+  @UseGuards(AuthGuard())
+  @UsePipes(new IdValidation())
+  async deleteTicket(@Query('id') id) {
+    return await this.ticketsService.delete(id);
   }
 }

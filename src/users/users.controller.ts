@@ -3,18 +3,17 @@ import {
   Post,
   Body,
   Get,
-  UseGuards,
   Res,
   HttpStatus,
   Param,
-  NotFoundException,
   Put,
   Query,
   Delete,
   UseInterceptors,
   UploadedFile,
-  Req,
   HttpException,
+  UsePipes,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
@@ -22,73 +21,51 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { IdValidation } from '../common/pipes/IdValidation.pipe';
 
 @Controller('users')
 export class UsersController {
   constructor(private userService: UsersService) {}
 
   @Get()
-  async getAll() {
-    return await this.userService.getAll();
+  async getAll(@Query('page') page: number) {
+    return await this.userService.getAll(page);
   }
 
   @Get(':id')
-  async getById(@Res() res, @Param('id') id) {
-    const user = await this.userService.getById(id);
-    if (!user) throw new NotFoundException('User does not exist!');
-    return res.status(HttpStatus.OK).json(user);
+  @UsePipes(new IdValidation())
+  async getById(@Param('id') id: string) {
+    return await this.userService.getById(id);
   }
 
   @Post()
   @UseGuards(AuthGuard())
-  async create(@Res() res: any, @Body() body: CreateUserDto) {
-    if (!(body && body.email && body.password)) {
-      return res
-        .status(HttpStatus.BAD_REQUEST)
-        .json({ error: 'Email and Password are required!' });
-    }
-
-    let user = await this.userService.findOneByEmail(body.email);
-
-    if (user) {
-      return res
-        .status(HttpStatus.FORBIDDEN)
-        .json({ error: 'User with this email already exists' });
-    } else {
-      user = await this.userService.create(body);
-      if (user) {
-        user.password = undefined;
-      }
-    }
-    return res.status(HttpStatus.OK).json(user);
+  async create(@Body() body: CreateUserDto) {
+    return await this.userService.create(body);
   }
 
   @Put('update')
   @UseGuards(AuthGuard())
-  async update(
-    @Res() res,
-    @Query('id') id,
-    @Body() createUserDTO: CreateUserDto,
-  ) {
-    const user = await this.userService.update(id, createUserDTO);
-    if (!user) throw new NotFoundException('User does not exist!');
-    return res.status(HttpStatus.OK).json(user);
+  @UsePipes(new IdValidation())
+  async update(@Query('id') id: string, @Body() body: CreateUserDto) {
+    return await this.userService.update(id, body);
   }
 
   @Delete('delete')
   @UseGuards(AuthGuard())
-  async delete(@Res() res, @Query('id') id) {
-    const user = await this.userService.delete(id);
-    if (!user) throw new NotFoundException('User does not exist!');
-    return res.status(HttpStatus.OK).json(user);
+  @UsePipes(new IdValidation())
+  async delete(@Query('id') id: string) {
+    return await this.userService.delete(id);
   }
 
   @Get('avatars/:id')
-  async serveAvatar(@Param('id') id, @Res() res): Promise<any> {
+  @UseGuards(AuthGuard())
+  async serveAvatar(@Param('id') id: string, @Res() res): Promise<any> {
     res.sendFile(id, { root: 'public/avatars' });
   }
 
   @Post(':id/avatar')
+  @UseGuards(AuthGuard())
   @UseInterceptors(
     FileInterceptor('avatar', {
       storage: diskStorage({
@@ -114,22 +91,8 @@ export class UsersController {
       },
     }),
   )
-  async uploadAvatar(
-    @Req() req,
-    @Res() res,
-    @Param('id') id,
-    @UploadedFile() avatar,
-  ) {
-    if (!avatar) {
-      return res
-        .status(HttpStatus.BAD_REQUEST)
-        .json({ ok: false, msg: 'Avatar missing!' });
-    }
-    const result = await this.userService.setAvatar(id, avatar.filename);
-    if (!result) throw new NotFoundException('User does not exist!');
-    return res.status(HttpStatus.OK).json({
-      ok: true,
-      msg: `Avatar created!`,
-    });
+  @UsePipes(new IdValidation())
+  async uploadAvatar(@Param('id') id: string, @UploadedFile() avatar: object) {
+    return await this.userService.setAvatar(id, avatar);
   }
 }

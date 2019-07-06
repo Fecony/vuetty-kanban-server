@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { IProject } from './interfaces/project.interface';
@@ -10,19 +15,43 @@ export class ProjectsService {
     @InjectModel('Project') private readonly projectModel: Model<IProject>,
   ) {}
 
-  async getAll(): Promise<IProject[]> {
-    const projects = await this.projectModel.find().exec();
-    return projects;
+  async getAll(page: number = 1): Promise<IProject[]> {
+    try {
+      const projects = await this.projectModel
+        .find()
+        .limit(25)
+        .skip(25 * (page - 1))
+        .exec();
+
+      if (!projects) {
+        throw new HttpException("Can't get projects...", HttpStatus.NOT_FOUND);
+      }
+      return projects;
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
   async getById(ID: string): Promise<IProject> {
-    const project = await this.projectModel.findById(ID).exec();
-    return project;
+    try {
+      const project = await this.projectModel.findById(ID).exec();
+
+      if (!project) {
+        throw new NotFoundException(`Project with id: ${ID} does not exist!`);
+      }
+      return project;
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
   async create(createProjectDTO: CreateProjectDTO): Promise<IProject> {
-    const newProject = await this.projectModel(createProjectDTO);
-    return newProject.save();
+    try {
+      const newProject = await this.projectModel(createProjectDTO).save();
+      return newProject;
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
   async addColumn(ID: string, body: string): Promise<object> {
@@ -45,43 +74,59 @@ export class ProjectsService {
               return { ok: true };
             })
             .catch(() => {
-              return { ok: false, error: 'Something happened' };
+              throw new HttpException(
+                'Something happened',
+                HttpStatus.BAD_REQUEST,
+              );
             });
           return result;
         } else {
-          return { ok: false, error: 'Column Already exists' };
+          throw new HttpException(
+            'Column Already exists',
+            HttpStatus.BAD_REQUEST,
+          );
         }
       })
       .catch(() => {
-        return { ok: false, error: 'Something happened' };
+        throw new HttpException('Something Happened', HttpStatus.BAD_REQUEST);
       });
     return result;
   }
 
-  async deleteColumn(ID: string, body: string): Promise<object> {
+  async deleteColumn(ID: string, body: any): Promise<object> {
+    const str = body.column
+      .split(' ')
+      .join('_')
+      .toUpperCase();
     let result = await this.projectModel
       .findOne({ _id: ID })
-      .find({ columns: body }) // Check if project with ID exists, then check if column with that value exists
+      .find({ columns: str }) // Check if project with ID exists, then check if column with that value exists
       .then(doc => {
         if (doc.length <= 0) {
-          return {
-            ok: false,
-            error: `Project with column: ${body} doesn't exist`,
-          };
+          throw new HttpException(
+            `Project with column: ${str} doesn't exist`,
+            HttpStatus.BAD_REQUEST,
+          );
         }
         // Remove column from array
         let result = doc[0]
-          .updateOne({ $pull: { columns: body } })
+          .updateOne({ $pull: { columns: str } })
           .then(() => {
             return { ok: true };
           })
           .catch(() => {
-            return { ok: false, error: "Can't update column ." };
+            throw new HttpException(
+              "Can't update column.",
+              HttpStatus.BAD_REQUEST,
+            );
           });
         return result;
       })
       .catch(() => {
-        return { ok: false, error: 'Something bad happened.' };
+        throw new HttpException(
+          'Something bad happened.',
+          HttpStatus.BAD_REQUEST,
+        );
       });
     return result;
   }
@@ -90,16 +135,30 @@ export class ProjectsService {
     ID: string,
     createProjectDTO: CreateProjectDTO,
   ): Promise<IProject> {
-    const updatedProject = await this.projectModel.findByIdAndUpdate(
-      ID,
-      createProjectDTO,
-      { new: true },
-    );
-    return updatedProject;
+    try {
+      const updatedProject = await this.projectModel.findByIdAndUpdate(
+        ID,
+        createProjectDTO,
+        { new: true },
+      );
+      return updatedProject;
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
   async delete(ID: string) {
-    const deletedProject = await this.projectModel.findByIdAndRemove(ID);
-    return deletedProject;
+    try {
+      const deletedProject = await this.projectModel.findByIdAndRemove(ID);
+      if (!deletedProject) {
+        throw new HttpException(
+          `Project with ID: ${ID} doesn't exist`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      return { msg: 'OK' };
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 }

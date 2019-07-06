@@ -11,80 +11,59 @@ import {
   Query,
   Delete,
   UseGuards,
+  UsePipes,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDTO } from './dto/create-project.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { IdValidation } from '../common/pipes/IdValidation.pipe';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private projectsService: ProjectsService) {}
 
   @Get()
-  async getAll(@Res() res) {
-    const projects = await this.projectsService.getAll();
-    return res.status(HttpStatus.OK).json(projects);
+  async getAll(@Query('page') page: number) {
+    return await this.projectsService.getAll(page);
   }
 
   @Get(':id')
-  async getById(@Res() res, @Param('id') id) {
-    const project = await this.projectsService.getById(id);
-    if (!project) throw new NotFoundException('Project does not exist!');
-    return res.status(HttpStatus.OK).json(project);
+  @UsePipes(new IdValidation())
+  async getById(@Param('id') id) {
+    return await this.projectsService.getById(id);
   }
 
   @Post()
   @UseGuards(AuthGuard())
-  async create(@Res() res, @Body() createProjectDTO: CreateProjectDTO) {
-    const project = await this.projectsService.create(createProjectDTO);
-    return res.status(HttpStatus.OK).json(project);
+  async create(@Body() body: CreateProjectDTO) {
+    return await this.projectsService.create(body);
   }
 
   @Put('update')
+  @UsePipes(new IdValidation())
   @UseGuards(AuthGuard())
-  async update(
-    @Res() res,
-    @Query('id') id,
-    @Body() createProjectDTO: CreateProjectDTO,
-  ) {
-    const project = await this.projectsService.update(id, createProjectDTO);
-    if (!project) throw new NotFoundException('Project does not exist!');
-    return res.status(HttpStatus.OK).json(project);
+  async update(@Query('id') id, @Body() body: CreateProjectDTO) {
+    return await this.projectsService.update(id, body);
   }
 
   @Put('column')
   @UseGuards(AuthGuard())
-  async addColumn(@Res() res, @Query('id') id, @Body() body) {
-    if (body && body.column) {
-      const result = await this.projectsService.addColumn(id, body.column);
-      return res.send(result);
-    }
-    return res
-      .status(HttpStatus.FORBIDDEN)
-      .json({ ok: false, error: 'Body is empty' });
+  @UsePipes(new IdValidation())
+  async addColumn(@Query('id') id, @Body() body) {
+    return await this.projectsService.addColumn(id, body.column);
   }
 
   @Delete('delete')
   @UseGuards(AuthGuard())
-  async delete(@Res() res, @Query('id') id) {
-    const project = await this.projectsService.delete(id);
-    if (!project) throw new NotFoundException('Project does not exist!');
-    return res.status(HttpStatus.OK).json(project);
+  @UsePipes(new IdValidation())
+  async delete(@Query('id') id) {
+    return await this.projectsService.delete(id);
   }
 
   @Delete('column')
   @UseGuards(AuthGuard())
-  async deleteColumn(@Res() res, @Query('id') id, @Body() body) {
-    if (body && body.column) {
-      const str = body.column
-        .split(' ')
-        .join('_')
-        .toUpperCase();
-      const result = await this.projectsService.deleteColumn(id, str);
-      return res.send(result);
-    }
-    return res
-      .status(HttpStatus.FORBIDDEN)
-      .json({ ok: false, error: 'Body is empty' });
+  @UsePipes(new IdValidation())
+  async deleteColumn(@Query('id') id, @Body() body) {
+    return await this.projectsService.deleteColumn(id, body);
   }
 }

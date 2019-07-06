@@ -19,10 +19,20 @@ export class AuthService {
   ) {}
 
   async validateUserByPassword(loginAttempt: LoginUserDto) {
+    if (!(loginAttempt && loginAttempt.email && loginAttempt.password)) {
+      throw new HttpException(
+        'Email and Password are required!',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     let userToAttempt = await this.usersService.findOneByEmail(
       loginAttempt.email,
     );
 
+    if (!userToAttempt) {
+      throw new HttpException("User dosn't exist", HttpStatus.BAD_REQUEST);
+    }
     return new Promise((resolve, reject) => {
       if (userToAttempt) {
         userToAttempt.checkPassword(
@@ -57,6 +67,10 @@ export class AuthService {
     } else {
       return new UnauthorizedException();
     }
+  }
+
+  async register(body: CreateUserDto) {
+    return await this.usersService.create(body);
   }
 
   createToken(userData: CreateUserDto) {
