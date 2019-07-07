@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { LoginUserDto } from '../users/dto/login-user.dto';
 import { UsersService } from '../users/users.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -18,10 +19,20 @@ export class AuthService {
   ) {}
 
   async validateUserByPassword(loginAttempt: LoginUserDto) {
+    if (!(loginAttempt && loginAttempt.email && loginAttempt.password)) {
+      throw new HttpException(
+        'Email and Password are required!',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     let userToAttempt = await this.usersService.findOneByEmail(
       loginAttempt.email,
     );
 
+    if (!userToAttempt) {
+      throw new HttpException("User dosn't exist", HttpStatus.BAD_REQUEST);
+    }
     return new Promise((resolve, reject) => {
       if (userToAttempt) {
         userToAttempt.checkPassword(
@@ -58,14 +69,30 @@ export class AuthService {
     }
   }
 
-  createToken(user: LoginUserDto) {
+  async register(body: CreateUserDto) {
+    return await this.usersService.create(body);
+  }
+
+  createToken(userData: CreateUserDto) {
     let data: JwtPayload = {
-      email: user.email,
+      email: userData.email,
     };
+
+    var user = (({
+      email,
+      username,
+      firstname,
+      lastname,
+      role,
+      profilePicture,
+    }) => ({ email, username, firstname, lastname, role, profilePicture }))(
+      userData,
+    );
 
     let token = this.jwtService.sign(data);
 
     return {
+      user,
       expiresIn: 3600,
       token,
     };
