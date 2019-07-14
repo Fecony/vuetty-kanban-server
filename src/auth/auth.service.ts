@@ -78,7 +78,6 @@ export class AuthService {
       email: userData.email,
     };
 
-    console.log(userData);
     var user = (({
       id,
       email,
