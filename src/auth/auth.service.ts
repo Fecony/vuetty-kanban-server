@@ -79,13 +79,14 @@ export class AuthService {
     };
 
     var user = (({
+      id,
       email,
       username,
       firstname,
       lastname,
       role,
       profilePicture,
-    }) => ({ email, username, firstname, lastname, role, profilePicture }))(
+    }) => ({ id, email, username, firstname, lastname, role, profilePicture }))(
       userData,
     );
 
