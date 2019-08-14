@@ -18,7 +18,10 @@ let bootstrap = async () => {
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
   await app.listen(PORT, () => {
-    Logger.log(`Server running on http://localhost:${PORT}`, 'Bootstrap');
+    Logger.log(
+      `Server running on http://localhost:${PORT}`,
+      'UserNotification',
+    );
   });
 };
 bootstrap();

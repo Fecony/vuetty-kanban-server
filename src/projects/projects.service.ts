@@ -8,6 +8,7 @@ import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { IProject } from './interfaces/project.interface';
 import { CreateProjectDTO } from './dto/create-project.dto';
+import { prepareMeta } from '../common/utils/prepare-meta.util';
 
 @Injectable()
 export class ProjectsService {
@@ -15,18 +16,25 @@ export class ProjectsService {
     @InjectModel('Project') private readonly projectModel: Model<IProject>,
   ) {}
 
-  async getAll(page: number = 1): Promise<IProject[]> {
+  LIMIT: number = 25;
+
+  async getAll(page: number = 1): Promise<object> {
     try {
+      const total = await this.projectModel.countDocuments();
       const projects = await this.projectModel
         .find()
-        .limit(25)
-        .skip(25 * (page - 1))
+        .limit(this.LIMIT)
+        .skip(this.LIMIT * (page - 1))
         .exec();
 
       if (!projects) {
         throw new HttpException("Can't get projects...", HttpStatus.NOT_FOUND);
       }
-      return projects;
+
+      let meta = prepareMeta(page, this.LIMIT, total);
+      let data = { meta, data: projects };
+
+      return data;
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }

@@ -10,6 +10,7 @@ import { ITicket } from './interfaces/ticket.interface';
 import { CreateTicketDTO } from './dto/create-ticket.dto';
 import { IUser } from '../users/interfaces/user.interface';
 import { ObjectID } from 'mongodb';
+import { prepareMeta } from '../common/utils/prepare-meta.util';
 
 @Injectable()
 export class TicketsService {
@@ -18,18 +19,25 @@ export class TicketsService {
     @InjectModel('User') private readonly usersModel: Model<IUser>,
   ) {}
 
-  async getAll(page: number = 1): Promise<ITicket[]> {
+  LIMIT: number = 25;
+
+  async getAll(page: number = 1): Promise<object> {
     try {
+      const total = await this.ticketsModel.countDocuments();
       const tickets = await this.ticketsModel
         .find()
-        .limit(25)
-        .skip(25 * (page - 1))
+        .limit(this.LIMIT)
+        .skip(this.LIMIT * (page - 1))
         .populate('author assignee project')
         .exec();
+
       if (!tickets) {
         throw new HttpException("Can't get tickets...", HttpStatus.NOT_FOUND);
       }
-      return tickets;
+      let meta = prepareMeta(page, this.LIMIT, total);
+      let data = { meta, data: tickets };
+
+      return data;
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }

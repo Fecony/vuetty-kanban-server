@@ -33,6 +33,7 @@ export class AuthService {
     if (!userToAttempt) {
       throw new HttpException("User dosn't exist", HttpStatus.BAD_REQUEST);
     }
+
     return new Promise((resolve, reject) => {
       if (userToAttempt) {
         userToAttempt.checkPassword(

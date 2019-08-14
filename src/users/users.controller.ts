@@ -22,12 +22,14 @@ import { AuthGuard } from '@nestjs/passport';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { IdValidation } from '../common/pipes/IdValidation.pipe';
+import { PageValidation } from '../common/pipes/PageValidation.pipe';
 
 @Controller('users')
 export class UsersController {
   constructor(private userService: UsersService) {}
 
   @Get()
+  @UsePipes(new PageValidation())
   async getAll(@Query('page') page: number) {
     return await this.userService.getAll(page);
   }
