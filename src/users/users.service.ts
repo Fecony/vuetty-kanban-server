@@ -9,24 +9,33 @@ import { InjectModel } from '@nestjs/mongoose';
 import { IUser } from './interfaces/user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { prepareMeta } from '../common/utils/prepare-meta.util';
 
 @Injectable()
 export class UsersService {
   constructor(@InjectModel('User') private userModel: Model<IUser>) {}
 
-  async getAll(page: number = 1): Promise<IUser[]> {
+  LIMIT: number = 25;
+
+  async getAll(page: number = 1): Promise<object> {
     try {
+      const total = await this.userModel.countDocuments();
       const users = await this.userModel
         .find()
-        .limit(25)
-        .skip(25 * (page - 1))
+        .limit(this.LIMIT)
+        .skip(this.LIMIT * (page - 1))
         .populate('tickets')
         .select(['-password'])
         .exec();
+
       if (!users) {
         throw new HttpException("Can't get users...", HttpStatus.NOT_FOUND);
       }
-      return users;
+
+      let meta = prepareMeta(page, this.LIMIT, total);
+      let data = { meta, data: users };
+
+      return data;
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
