@@ -19,6 +19,7 @@ export class IdValidation implements PipeTransform {
         HttpStatus.BAD_REQUEST,
       );
     }
+    console.log('went there');
     return value;
   }
 }
