@@ -14,12 +14,14 @@ import { TicketsService } from './tickets.service';
 import { CreateTicketDTO } from './dto/create-ticket.dto';
 import { IdValidation } from '../common/pipes/IdValidation.pipe';
 import { AuthGuard } from '@nestjs/passport';
+import { PageValidation } from '../common/pipes/PageValidation.pipe';
 
 @Controller('tickets')
 export class TicketsController {
   constructor(private ticketsService: TicketsService) {}
 
   @Get()
+  @UsePipes(new PageValidation())
   async getAll(@Query('page') page: number) {
     return await this.ticketsService.getAll(page);
   }

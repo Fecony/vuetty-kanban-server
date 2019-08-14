@@ -17,12 +17,14 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDTO } from './dto/create-project.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { IdValidation } from '../common/pipes/IdValidation.pipe';
+import { PageValidation } from '../common/pipes/PageValidation.pipe';
 
 @Controller('projects')
 export class ProjectsController {
   constructor(private projectsService: ProjectsService) {}
 
   @Get()
+  @UsePipes(new PageValidation())
   async getAll(@Query('page') page: number) {
     return await this.projectsService.getAll(page);
   }
