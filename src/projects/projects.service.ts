@@ -9,6 +9,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { IProject } from './interfaces/project.interface';
 import { CreateProjectDTO } from './dto/create-project.dto';
 import { prepareMeta } from '../common/utils/prepare-meta.util';
+import { getFormattedColumnName } from '../common/utils/column-name.utils';
+import { isString, isNull } from 'util';
 
 @Injectable()
 export class ProjectsService {
@@ -62,43 +64,125 @@ export class ProjectsService {
     }
   }
 
-  async addColumn(ID: string, body: string): Promise<object> {
-    const str = body
+  async update(
+    ID: string,
+    createProjectDTO: CreateProjectDTO,
+  ): Promise<IProject> {
+    try {
+      const updatedProject = await this.projectModel.findByIdAndUpdate(
+        ID,
+        createProjectDTO,
+        { new: true },
+      );
+      return updatedProject;
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async delete(ID: string) {
+    try {
+      const deletedProject = await this.projectModel.findByIdAndRemove(ID);
+      if (!deletedProject) {
+        throw new HttpException(
+          `Project with ID: ${ID} doesn't exist`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      return { msg: 'OK' };
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async addColumn(ID: string, body: any): Promise<IProject> {
+    let {
+      column: { name, order },
+    } = body;
+
+    // Check if project exists and get last order number
+    let project: any = await this.getById(ID);
+    let lastOrderNum = Math.max(...project.columns.map(o => o.order), 0);
+
+    // Values for new column
+    order = order ? order : lastOrderNum + 1;
+    name = name
       .split(' ')
       .join('_')
       .toUpperCase();
+
+    let hasColumn = project.columns.some(
+      (columnValue: { name: string }) => columnValue.name == name,
+    );
+
+    if (hasColumn) {
+      throw new HttpException('Column Already exists', HttpStatus.BAD_REQUEST);
+    }
+
     let result = this.projectModel
-      .findOne({ _id: ID }) // Search if projects exists
-      .find({ columns: str }) // Search if column is there already
-      .then(doc => {
-        // If column is not here
-        if (doc.length <= 0) {
-          let result = this.projectModel
-            .updateOne(
-              { _id: ID },
-              { $push: { columns: str } }, // Push new column to [columns]
-            )
-            .then(() => {
-              return { ok: true };
-            })
-            .catch(() => {
-              throw new HttpException(
-                'Something happened',
-                HttpStatus.BAD_REQUEST,
-              );
-            });
-          return result;
-        } else {
+      .findByIdAndUpdate({ _id: ID }, { $push: { columns: { name, order } } })
+      .then(() => {
+        return { ok: true };
+      })
+      .catch(err => {
+        throw new HttpException(
+          'Something happened when adding new column...' + err,
+          HttpStatus.BAD_REQUEST,
+        );
+      });
+
+    return result;
+  }
+
+  async updateColumn(ID: string, column: string, body: any): Promise<any> {
+    let {
+      column: { name, order },
+    } = body;
+
+    let project: any = await this.getById(ID);
+
+    column = getFormattedColumnName(column); // Old Value
+    name = getFormattedColumnName(name); // New Value
+
+    let canBeUpdated = project.columns.some(
+      (columnValue: { name: string }) => columnValue.name == column,
+    );
+
+    let isAlreadyDefined = project.columns.some(
+      (columnValue: { name: string }) => columnValue.name == name,
+    );
+
+    if (!canBeUpdated) {
+      throw new HttpException(
+        `Column ${column} doesn't exist!`,
+        HttpStatus.BAD_REQUEST,
+      );
+    } else if (isAlreadyDefined) {
+      throw new HttpException(
+        `New Column name ${name} already exists in project!`,
+        HttpStatus.BAD_REQUEST,
+      );
+    } else {
+      let currentOrder = project.columns.filter(o => o.name == column);
+      order = order ? order : currentOrder[0]['order'];
+
+      let result = this.projectModel
+        .updateOne(
+          { _id: ID, 'columns.name': column },
+          { $set: { 'columns.$.name': name, 'columns.$.order': order } },
+        )
+        .then(() => {
+          return { ok: true };
+        })
+        .catch(err => {
           throw new HttpException(
-            'Column Already exists',
+            'Something happened when updating column...' + err,
             HttpStatus.BAD_REQUEST,
           );
-        }
-      })
-      .catch(() => {
-        throw new HttpException('Something Happened', HttpStatus.BAD_REQUEST);
-      });
-    return result;
+        });
+
+      return result;
+    }
   }
 
   async deleteColumn(ID: string, body: any): Promise<object> {
@@ -137,36 +221,5 @@ export class ProjectsService {
         );
       });
     return result;
-  }
-
-  async update(
-    ID: string,
-    createProjectDTO: CreateProjectDTO,
-  ): Promise<IProject> {
-    try {
-      const updatedProject = await this.projectModel.findByIdAndUpdate(
-        ID,
-        createProjectDTO,
-        { new: true },
-      );
-      return updatedProject;
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  async delete(ID: string) {
-    try {
-      const deletedProject = await this.projectModel.findByIdAndRemove(ID);
-      if (!deletedProject) {
-        throw new HttpException(
-          `Project with ID: ${ID} doesn't exist`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      return { msg: 'OK' };
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
   }
 }

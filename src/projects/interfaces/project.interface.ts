@@ -2,7 +2,8 @@ import { Document } from 'mongoose';
 
 export interface IProject extends Document {
   title: string;
-  code: string;
+  code: object;
   description?: string;
-  columns: [string];
+  author: string;
+  columns: [object];
 }
