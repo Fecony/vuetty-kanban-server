@@ -1,8 +1,7 @@
 import {
   Injectable,
-  HttpException,
-  HttpStatus,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -10,7 +9,6 @@ import { IProject } from './interfaces/project.interface';
 import { CreateProjectDTO } from './dto/create-project.dto';
 import { prepareMeta } from '../common/utils/prepare-meta.util';
 import { getFormattedColumnName } from '../common/utils/column-name.utils';
-import { isString, isNull } from 'util';
 
 @Injectable()
 export class ProjectsService {
@@ -30,7 +28,7 @@ export class ProjectsService {
         .exec();
 
       if (!projects) {
-        throw new HttpException("Can't get projects...", HttpStatus.NOT_FOUND);
+        throw new NotFoundException("Can't get projects...");
       }
 
       let meta = prepareMeta(page, this.LIMIT, total);
@@ -38,7 +36,7 @@ export class ProjectsService {
 
       return data;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -51,7 +49,7 @@ export class ProjectsService {
       }
       return project;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -60,7 +58,7 @@ export class ProjectsService {
       const newProject = await this.projectModel(createProjectDTO).save();
       return newProject;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -76,7 +74,7 @@ export class ProjectsService {
       );
       return updatedProject;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -84,14 +82,11 @@ export class ProjectsService {
     try {
       const deletedProject = await this.projectModel.findByIdAndRemove(ID);
       if (!deletedProject) {
-        throw new HttpException(
-          `Project with ID: ${ID} doesn't exist`,
-          HttpStatus.BAD_REQUEST,
-        );
+        throw new BadRequestException(`Project with ID: ${ID} doesn't exist`);
       }
       return { msg: 'OK' };
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -106,17 +101,14 @@ export class ProjectsService {
 
     // Values for new column
     order = order ? order : lastOrderNum + 1;
-    name = name
-      .split(' ')
-      .join('_')
-      .toUpperCase();
+    name = getFormattedColumnName(name);
 
     let hasColumn = project.columns.some(
       (columnValue: { name: string }) => columnValue.name == name,
     );
 
     if (hasColumn) {
-      throw new HttpException('Column Already exists', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('Column Already exists');
     }
 
     let result = this.projectModel
@@ -125,16 +117,15 @@ export class ProjectsService {
         return { ok: true };
       })
       .catch(err => {
-        throw new HttpException(
+        throw new BadRequestException(
           'Something happened when adding new column...' + err,
-          HttpStatus.BAD_REQUEST,
         );
       });
 
     return result;
   }
 
-  async updateColumn(ID: string, column: string, body: any): Promise<any> {
+  async updateColumn(ID: string, column: string, body: any): Promise<IProject> {
     let {
       column: { name, order },
     } = body;
@@ -153,14 +144,10 @@ export class ProjectsService {
     );
 
     if (!canBeUpdated) {
-      throw new HttpException(
-        `Column ${column} doesn't exist!`,
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException(`Column ${column} doesn't exist!`);
     } else if (isAlreadyDefined) {
-      throw new HttpException(
+      throw new BadRequestException(
         `New Column name ${name} already exists in project!`,
-        HttpStatus.BAD_REQUEST,
       );
     } else {
       let currentOrder = project.columns.filter(o => o.name == column);
@@ -175,9 +162,8 @@ export class ProjectsService {
           return { ok: true };
         })
         .catch(err => {
-          throw new HttpException(
+          throw new BadRequestException(
             'Something happened when updating column...' + err,
-            HttpStatus.BAD_REQUEST,
           );
         });
 
@@ -185,41 +171,32 @@ export class ProjectsService {
     }
   }
 
-  async deleteColumn(ID: string, body: any): Promise<object> {
-    const str = body.column
-      .split(' ')
-      .join('_')
-      .toUpperCase();
-    let result = await this.projectModel
-      .findOne({ _id: ID })
-      .find({ columns: str }) // Check if project with ID exists, then check if column with that value exists
-      .then(doc => {
-        if (doc.length <= 0) {
-          throw new HttpException(
-            `Project with column: ${str} doesn't exist`,
-            HttpStatus.BAD_REQUEST,
-          );
-        }
-        // Remove column from array
-        let result = doc[0]
-          .updateOne({ $pull: { columns: str } })
-          .then(() => {
-            return { ok: true };
-          })
-          .catch(() => {
-            throw new HttpException(
-              "Can't update column.",
-              HttpStatus.BAD_REQUEST,
-            );
-          });
-        return result;
+  async deleteColumn(ID: string, body: any): Promise<IProject> {
+    let { column } = body;
+    const name = getFormattedColumnName(column);
+
+    let project: any = await this.getById(ID);
+    let hasColumn = project.columns.some(
+      (c: { name: string }) => c.name == name,
+    );
+
+    if (!hasColumn) {
+      throw new BadRequestException(
+        `Column '${name}' doesn't exist in '${project.title}' project.`,
+      );
+    }
+
+    let result = this.projectModel
+      .updateOne({ _id: ID }, { $pull: { columns: { name } } })
+      .then(() => {
+        return { ok: true };
       })
-      .catch(() => {
-        throw new HttpException(
-          'Something bad happened.',
-          HttpStatus.BAD_REQUEST,
+      .catch(err => {
+        throw new BadRequestException(
+          'Something happened when removing column...' + err,
         );
       });
+
     return result;
   }
 }

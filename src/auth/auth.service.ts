@@ -1,9 +1,9 @@
 import {
   Injectable,
   UnauthorizedException,
-  HttpException,
-  HttpStatus,
   NotFoundException,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { LoginUserDto } from '../users/dto/login-user.dto';
@@ -20,10 +20,7 @@ export class AuthService {
 
   async validateUserByPassword(loginAttempt: LoginUserDto) {
     if (!(loginAttempt && loginAttempt.email && loginAttempt.password)) {
-      throw new HttpException(
-        'Email and Password are required!',
-        HttpStatus.FORBIDDEN,
-      );
+      throw new ForbiddenException('Email and Password are required!');
     }
 
     let userToAttempt = await this.usersService.findOneByEmail(
@@ -31,7 +28,7 @@ export class AuthService {
     );
 
     if (!userToAttempt) {
-      throw new HttpException("User dosn't exist", HttpStatus.BAD_REQUEST);
+      throw new BadRequestException("User doesn't exist!");
     }
 
     return new Promise((resolve, reject) => {
@@ -40,22 +37,17 @@ export class AuthService {
           loginAttempt.password,
           (err: Error, isMatch: boolean) => {
             if (err)
-              reject(new HttpException('Error occured', HttpStatus.FORBIDDEN));
+              reject(new ForbiddenException('Error occured: ', err.message));
 
             if (isMatch) {
               resolve(this.createToken(userToAttempt));
             } else {
-              reject(
-                new HttpException(
-                  "Password doesn't match",
-                  HttpStatus.FORBIDDEN,
-                ),
-              );
+              reject(new ForbiddenException("Password doesn't match"));
             }
           },
         );
       } else {
-        reject(new NotFoundException("Users doesn't exist!"));
+        reject(new NotFoundException("User doesn't exist!"));
       }
     });
   }

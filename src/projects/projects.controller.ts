@@ -1,12 +1,9 @@
 import {
   Controller,
   Post,
-  Res,
   Body,
-  HttpStatus,
   Get,
   Param,
-  NotFoundException,
   Put,
   Query,
   Delete,
@@ -61,21 +58,25 @@ export class ProjectsController {
   @Put('column')
   @UseGuards(AuthGuard())
   @UsePipes(new IdValidation())
-  async addColumn(@Query('id') id, @Body() body) {
+  async addColumn(@Query('id') id, @Body() body: CreateColumnDTO) {
     return await this.projectsService.addColumn(id, body);
   }
 
   @Patch(':id')
   @UseGuards(AuthGuard())
   @UsePipes(new IdValidation())
-  async updateColumn(@Param('id') id, @Query('column') column, @Body() body) {
+  async updateColumn(
+    @Param('id') id,
+    @Query('column') column,
+    @Body() body: CreateColumnDTO,
+  ) {
     return await this.projectsService.updateColumn(id, column, body);
   }
 
   @Delete('column')
   @UseGuards(AuthGuard())
   @UsePipes(new IdValidation())
-  async deleteColumn(@Query('id') id, @Body() body: CreateColumnDTO) {
+  async deleteColumn(@Query('id') id, @Body() body) {
     return await this.projectsService.deleteColumn(id, body);
   }
 }

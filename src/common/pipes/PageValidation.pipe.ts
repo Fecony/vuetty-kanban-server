@@ -1,16 +1,10 @@
-import {
-  PipeTransform,
-  Injectable,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class PageValidation implements PipeTransform {
   transform(value: any) {
-    const err = new HttpException(
+    const err = new BadRequestException(
       `${value} is not valid page number. Page must be positive integer.`,
-      HttpStatus.BAD_REQUEST,
     );
 
     if (value == undefined || value == '') {

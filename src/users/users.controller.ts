@@ -4,16 +4,15 @@ import {
   Body,
   Get,
   Res,
-  HttpStatus,
   Param,
   Put,
   Query,
   Delete,
   UseInterceptors,
   UploadedFile,
-  HttpException,
   UsePipes,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
@@ -81,13 +80,7 @@ export class UsersController {
       fileFilter: (req, file, cb) => {
         var ext = extname(file.originalname);
         if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg') {
-          return cb(
-            new HttpException(
-              'Only images are allowed!',
-              HttpStatus.BAD_REQUEST,
-            ),
-            null,
-          );
+          return cb(new BadRequestException('Only images are allowed!'), null);
         }
         return cb(null, true);
       },

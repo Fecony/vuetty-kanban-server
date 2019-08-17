@@ -1,8 +1,7 @@
 import {
   Injectable,
   NotFoundException,
-  HttpException,
-  HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -32,14 +31,14 @@ export class TicketsService {
         .exec();
 
       if (!tickets) {
-        throw new HttpException("Can't get tickets...", HttpStatus.NOT_FOUND);
+        throw new NotFoundException("Can't get tickets...");
       }
       let meta = prepareMeta(page, this.LIMIT, total);
       let data = { meta, data: tickets };
 
       return data;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -53,7 +52,7 @@ export class TicketsService {
         throw new NotFoundException(`Ticket with id: ${ID} does not exist!`);
       return ticket;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -64,20 +63,13 @@ export class TicketsService {
       // Search for assigned user if exists push ticket to tickets[]
       if (assignee) {
         if (!ObjectID.isValid(assignee)) {
-          throw new HttpException(
-            `ID: '${assignee}' is not valid.`,
-            HttpStatus.BAD_REQUEST,
-          );
+          throw new BadRequestException(`ID: '${assignee}' is not valid.`);
         }
         await this.usersModel.findById(assignee).then(user => {
-          if (!user)
-            throw new HttpException(
-              "User doesn't exists.",
-              HttpStatus.NOT_FOUND,
-            );
+          if (!user) throw new NotFoundException("User doesn't exists.");
           user.tickets.push(newTicket._id);
           user.save(error => {
-            if (error) throw new HttpException(error, HttpStatus.BAD_REQUEST);
+            if (error) throw new BadRequestException(error);
           });
         });
       }
@@ -88,7 +80,7 @@ export class TicketsService {
         );
       return ticket;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -99,7 +91,7 @@ export class TicketsService {
         .populate('assignee author');
       return updatedTicket;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -107,13 +99,10 @@ export class TicketsService {
     try {
       const deletedTicket = await this.ticketsModel.findByIdAndRemove(ID);
       if (!deletedTicket)
-        throw new HttpException(
-          `Ticket with id: ${ID} doesn't exist`,
-          HttpStatus.BAD_REQUEST,
-        );
+        throw new BadRequestException(`Ticket with id: ${ID} doesn't exist`);
       return { msg: 'OK' };
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 }

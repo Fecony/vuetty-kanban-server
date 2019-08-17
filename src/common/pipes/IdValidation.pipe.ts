@@ -2,8 +2,7 @@ import {
   PipeTransform,
   Injectable,
   ArgumentMetadata,
-  HttpException,
-  HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ObjectID } from 'mongodb';
 
@@ -14,10 +13,7 @@ export class IdValidation implements PipeTransform {
      * Check if passed id param/query is valid mongodb id
      */
     if (metadata.data == 'id' && !ObjectID.isValid(value)) {
-      throw new HttpException(
-        `ID: '${value}' is not valid.`,
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException(`ID: '${value}' is not valid.`);
     }
 
     return value;
