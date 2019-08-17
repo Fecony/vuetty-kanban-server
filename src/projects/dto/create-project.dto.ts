@@ -4,4 +4,5 @@ export class CreateProjectDTO {
   readonly description?: string;
   readonly author: string;
   readonly columns: [string];
+  readonly tickets: [string];
 }

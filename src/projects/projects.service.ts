@@ -9,11 +9,14 @@ import { IProject } from './interfaces/project.interface';
 import { CreateProjectDTO } from './dto/create-project.dto';
 import { prepareMeta } from '../common/utils/prepare-meta.util';
 import { getFormattedColumnName } from '../common/utils/column-name.utils';
+import { validateColumnName } from '../common/utils/validate-column.utils';
+import { ITicket } from '../tickets/interfaces/ticket.interface';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectModel('Project') private readonly projectModel: Model<IProject>,
+    @InjectModel('Ticket') private readonly ticketsModel: Model<ITicket>,
   ) {}
 
   LIMIT: number = 25;
@@ -25,6 +28,7 @@ export class ProjectsService {
         .find()
         .limit(this.LIMIT)
         .skip(this.LIMIT * (page - 1))
+        .populate('tickets')
         .exec();
 
       if (!projects) {
@@ -42,7 +46,10 @@ export class ProjectsService {
 
   async getById(ID: string): Promise<IProject> {
     try {
-      const project = await this.projectModel.findById(ID).exec();
+      const project = await this.projectModel
+        .findById(ID)
+        .populate('tickets')
+        .exec();
 
       if (!project) {
         throw new NotFoundException(`Project with id: ${ID} does not exist!`);
@@ -173,20 +180,19 @@ export class ProjectsService {
 
   async deleteColumn(ID: string, body: any): Promise<IProject> {
     let { column } = body;
-    const name = getFormattedColumnName(column);
 
     let project: any = await this.getById(ID);
-    let hasColumn = project.columns.some(
-      (c: { name: string }) => c.name == name,
-    );
 
-    if (!hasColumn) {
+    let isValid = validateColumnName(project.columns, column);
+    const name = getFormattedColumnName(column);
+
+    if (!isValid) {
       throw new BadRequestException(
         `Column '${name}' doesn't exist in '${project.title}' project.`,
       );
     }
 
-    let result = this.projectModel
+    let result = await this.projectModel
       .updateOne({ _id: ID }, { $pull: { columns: { name } } })
       .then(() => {
         return { ok: true };
@@ -197,6 +203,29 @@ export class ProjectsService {
         );
       });
 
+    result = await this.projectModel
+      .updateOne(
+        { _id: ID },
+        { $push: { columns: { name: 'FUCKING_UPDATE_ME_3', order: 0 } } },
+      )
+      .then(() => {
+        return { ok: true };
+      })
+      .catch(err => {
+        throw new BadRequestException(
+          'Something happened when added default column...' + err,
+        );
+      });
+
+    // Updating tickets in project to update status: [TO_DO, IN_PROGRESS, etc] to default one
+    await this.ticketsModel
+      .updateMany(
+        { project: ID, status: name },
+        { $set: { status: 'FUCKING_UPDATE_ME_3' } },
+      )
+      .catch(err => {
+        throw new BadRequestException("Can't update ticket status..." + err);
+      });
     return result;
   }
 }

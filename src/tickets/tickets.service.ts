@@ -4,18 +4,21 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { ObjectID } from 'mongodb';
 import { InjectModel } from '@nestjs/mongoose';
 import { ITicket } from './interfaces/ticket.interface';
 import { CreateTicketDTO } from './dto/create-ticket.dto';
 import { IUser } from '../users/interfaces/user.interface';
-import { ObjectID } from 'mongodb';
+import { IProject } from '../projects/interfaces/project.interface';
 import { prepareMeta } from '../common/utils/prepare-meta.util';
+import { validateColumnName } from '../common/utils/validate-column.utils';
 
 @Injectable()
 export class TicketsService {
   constructor(
     @InjectModel('Ticket') private readonly ticketsModel: Model<ITicket>,
     @InjectModel('User') private readonly usersModel: Model<IUser>,
+    @InjectModel('Project') private readonly projectModel: Model<IProject>,
   ) {}
 
   LIMIT: number = 25;
@@ -56,23 +59,46 @@ export class TicketsService {
     }
   }
 
-  async create(createTicketDTO: CreateTicketDTO): Promise<ITicket> {
+  async create(createTicketDTO: CreateTicketDTO): Promise<any> {
+    let { project: id, status, assignee } = createTicketDTO;
+    let { columns }: any = await this.projectModel.findOne({ _id: id });
+    let isValid = validateColumnName(columns, status);
+
+    if (!isValid) {
+      throw new BadRequestException(`Project doesn't have '${status}' column.`);
+    }
+
     const newTicket = await this.ticketsModel(createTicketDTO);
-    const { assignee } = createTicketDTO;
+
     try {
       // Search for assigned user if exists push ticket to tickets[]
       if (assignee) {
         if (!ObjectID.isValid(assignee)) {
-          throw new BadRequestException(`ID: '${assignee}' is not valid.`);
+          throw new BadRequestException(
+            `Assignee ID: '${assignee}' is not valid.`,
+          );
         }
-        await this.usersModel.findById(assignee).then(user => {
-          if (!user) throw new NotFoundException("User doesn't exists.");
-          user.tickets.push(newTicket._id);
-          user.save(error => {
-            if (error) throw new BadRequestException(error);
+        await this.usersModel
+          .findByIdAndUpdate(
+            { _id: assignee },
+            { $push: { tickets: newTicket._id } },
+          )
+          .catch(err => {
+            throw new BadRequestException(err);
           });
-        });
       }
+      if (id) {
+        if (!ObjectID.isValid(id)) {
+          throw new BadRequestException(`Project ID: '${id}' is not valid.`);
+        }
+        await this.projectModel
+          .findByIdAndUpdate({ _id: id }, { $push: { tickets: newTicket._id } })
+          .exec()
+          .catch(err => {
+            throw new BadRequestException(err);
+          });
+      }
+
       let ticket = newTicket
         .save()
         .then(ticket =>

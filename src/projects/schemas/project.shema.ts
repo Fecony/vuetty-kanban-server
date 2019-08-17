@@ -4,7 +4,7 @@ let ColumnSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      default: null,
+      default: 'TO_DO',
       unique: true,
       required: true,
     },
@@ -29,6 +29,12 @@ export const ProjectSchema = new mongoose.Schema(
       required: true,
     },
     columns: [ColumnSchema],
+    tickets: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Ticket',
+      },
+    ],
   },
   { timestamps: true },
 );

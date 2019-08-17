@@ -6,4 +6,5 @@ export interface IProject extends Document {
   description?: string;
   author: string;
   columns: [object];
+  tickets: [string];
 }
