@@ -1,4 +1,5 @@
 import * as mongoose from 'mongoose';
+import { getFormattedColumnName } from '../../common/utils/column-name.utils';
 
 export const TicketSchema = new mongoose.Schema(
   {
@@ -48,10 +49,13 @@ TicketSchema.pre('save', function(next) {
     let newDate = addDays(Date.now(), 7);
     ticket.due_date = newDate;
   }
+
+  ticket.status = getFormattedColumnName(ticket.status);
+
   next();
 });
 
-function addDays(date, days) {
+function addDays(date, days: number): Date {
   var result = new Date(date);
   result.setDate(result.getDate() + days);
   return result;

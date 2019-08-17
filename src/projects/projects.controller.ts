@@ -1,23 +1,22 @@
 import {
   Controller,
   Post,
-  Res,
   Body,
-  HttpStatus,
   Get,
   Param,
-  NotFoundException,
   Put,
   Query,
   Delete,
   UseGuards,
   UsePipes,
+  Patch,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDTO } from './dto/create-project.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { IdValidation } from '../common/pipes/IdValidation.pipe';
 import { PageValidation } from '../common/pipes/PageValidation.pipe';
+import { CreateColumnDTO } from './dto/create-column.dto';
 
 @Controller('projects')
 export class ProjectsController {
@@ -48,18 +47,30 @@ export class ProjectsController {
     return await this.projectsService.update(id, body);
   }
 
-  @Put('column')
-  @UseGuards(AuthGuard())
-  @UsePipes(new IdValidation())
-  async addColumn(@Query('id') id, @Body() body) {
-    return await this.projectsService.addColumn(id, body.column);
-  }
-
   @Delete('delete')
   @UseGuards(AuthGuard())
   @UsePipes(new IdValidation())
   async delete(@Query('id') id) {
     return await this.projectsService.delete(id);
+  }
+
+  // COLUMN routes
+  @Put('column')
+  @UseGuards(AuthGuard())
+  @UsePipes(new IdValidation())
+  async addColumn(@Query('id') id, @Body() body: CreateColumnDTO) {
+    return await this.projectsService.addColumn(id, body);
+  }
+
+  @Patch(':id')
+  @UseGuards(AuthGuard())
+  @UsePipes(new IdValidation())
+  async updateColumn(
+    @Param('id') id,
+    @Query('column') column,
+    @Body() body: CreateColumnDTO,
+  ) {
+    return await this.projectsService.updateColumn(id, column, body);
   }
 
   @Delete('column')

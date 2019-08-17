@@ -11,8 +11,8 @@ import { UsersResolver } from './users.resolver';
     MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
     PassportModule.register({ defaultStrategy: 'jwt', session: false }),
   ],
-  controllers: [UsersController],
-  providers: [UsersService, UsersResolver],
   exports: [UsersService],
+  providers: [UsersService, UsersResolver],
+  controllers: [UsersController],
 })
 export class UsersModule {}

@@ -1,14 +1,12 @@
 import { Model } from 'mongoose';
 import {
   Injectable,
-  HttpException,
-  HttpStatus,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { IUser } from './interfaces/user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
-import { LoginUserDto } from './dto/login-user.dto';
 import { prepareMeta } from '../common/utils/prepare-meta.util';
 
 @Injectable()
@@ -29,7 +27,7 @@ export class UsersService {
         .exec();
 
       if (!users) {
-        throw new HttpException("Can't get users...", HttpStatus.NOT_FOUND);
+        throw new NotFoundException("Can't get users...");
       }
 
       let meta = prepareMeta(page, this.LIMIT, total);
@@ -37,7 +35,7 @@ export class UsersService {
 
       return data;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -53,28 +51,23 @@ export class UsersService {
       }
       return user;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
   async findOneByEmail(email: string): Model<IUser> {
-    let user = this.userModel.findOne({ email: email });
-    return user;
+    return await this.userModel.findOne({ email: email });
   }
 
   async create(createUserDto: CreateUserDto): Promise<IUser> {
     if (!(createUserDto && createUserDto.email && createUserDto.password)) {
-      throw new HttpException(
-        'Email and Password are requred!',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException('Email and Password are requred!');
     }
     let user = await this.findOneByEmail(createUserDto.email);
 
     if (user) {
-      throw new HttpException(
+      throw new BadRequestException(
         `User with email: ${createUserDto.email} already exists`,
-        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -87,7 +80,7 @@ export class UsersService {
       }
       return newUser;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -99,7 +92,7 @@ export class UsersService {
         .select(['-password']);
       return updatedUser;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -107,28 +100,25 @@ export class UsersService {
     try {
       const deletedUser = await this.userModel.findByIdAndRemove(ID);
       if (!deletedUser) {
-        throw new HttpException(
-          `User with ID: ${ID} doesn't exist`,
-          HttpStatus.BAD_REQUEST,
-        );
+        throw new BadRequestException(`User with ID: ${ID} doesn't exist`);
       }
-      return { msg: 'OK' };
+      return { ok: true };
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 
   async setAvatar(ID: string, avatar: any) {
     if (!avatar) {
-      throw new HttpException('Avatar is missing!', HttpStatus.BAD_REQUEST);
+      throw new BadRequestException('Avatar is missing!');
     }
     try {
       await this.userModel.findByIdAndUpdate(ID, {
         profilePicture: avatar.filename,
       });
-      return { msg: 'OK' };
+      return { ok: true };
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new BadRequestException(error.message);
     }
   }
 }

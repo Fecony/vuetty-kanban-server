@@ -1,15 +1,38 @@
 import * as mongoose from 'mongoose';
 
+let ColumnSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      default: 'TO_DO',
+      unique: true,
+      required: true,
+    },
+    order: { type: Number, default: 0, required: true },
+  },
+  { _id: false, id: false },
+);
+
 export const ProjectSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true, default: 'dumb project' },
+    title: {
+      type: String,
+      required: true,
+      default: 'dumb project',
+      unique: true,
+    },
     code: { type: String, unique: true },
     description: String,
-    columns: [
+    author: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    columns: [ColumnSchema],
+    tickets: [
       {
-        type: String,
-        unique: true,
-        default: null,
+        type: mongoose.Schema.ObjectId,
+        ref: 'Ticket',
       },
     ],
   },

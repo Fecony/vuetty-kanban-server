@@ -4,5 +4,7 @@ export interface IProject extends Document {
   title: string;
   code: string;
   description?: string;
-  columns: [string];
+  author: string;
+  columns: [object];
+  tickets: [string];
 }
