@@ -180,7 +180,7 @@ export class ProjectsService {
 
   async deleteColumn(ID: string, body: any): Promise<IProject> {
     let { column } = body;
-
+    let defaultColumn = 'FUCKING_UPDATE_ME'; 
     let project: any = await this.getById(ID);
 
     let isValid = validateColumnName(project.columns, column);
@@ -206,7 +206,7 @@ export class ProjectsService {
     result = await this.projectModel
       .updateOne(
         { _id: ID },
-        { $push: { columns: { name: 'FUCKING_UPDATE_ME_3', order: 0 } } },
+        { $push: { columns: { name: defaultColumn, order: 0 } } },
       )
       .then(() => {
         return { ok: true };
@@ -221,7 +221,7 @@ export class ProjectsService {
     await this.ticketsModel
       .updateMany(
         { project: ID, status: name },
-        { $set: { status: 'FUCKING_UPDATE_ME_3' } },
+        { $set: { status: defaultColumn } },
       )
       .catch(err => {
         throw new BadRequestException("Can't update ticket status..." + err);
