@@ -1,5 +1,7 @@
 # Vuetty Kanban Server
 
+[![Build Status](https://travis-ci.com/Fecony/vuetty-kanban-server.svg?token=KquVGmQ9CBMhcoabSNv9&branch=master)](https://travis-ci.com/Fecony/vuetty-kanban-server)
+
 REST/GraphQL Backend server, used for kanban web app.
 
 ## Getting Started
