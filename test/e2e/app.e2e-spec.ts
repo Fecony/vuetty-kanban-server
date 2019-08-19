@@ -1,9 +1,9 @@
 import request from 'supertest';
+import * as mongoose from 'mongoose';
 import { Test } from '@nestjs/testing';
-
 import { INestApplication } from '@nestjs/common';
-import { AppModule } from '../src/app.module';
-import { AppService } from '../src/app.service';
+import { AppModule } from '../../src/app.module';
+import { AppService } from '../../src/app.service';
 
 describe('App', () => {
   let app: INestApplication;
@@ -25,9 +25,7 @@ describe('App', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect({
-        data: appService.ping(),
-      });
+      .expect(appService.ping());
   });
 
   afterAll(async () => {

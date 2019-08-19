@@ -23,5 +23,9 @@ jobs:
   include:
     - stage: test
       name: 'Unit Tests'
-      script: npm test
-      after_success: npm test
+      script: npm run test
+      after_success: npm run test
+    - stage: test_two
+      name: 'e2e Tests'
+      script: npm run test:e2e
+      after_success: npm run test:e2e
