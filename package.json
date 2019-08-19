@@ -2,6 +2,10 @@
   "name": "vuetty-kanban-server",
   "version": "0.0.1",
   "description": "Nest.js Backend Server for Kanban App",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Fecony/vuetty-kanban-server"
+  },
   "author": "Richard Tagil",
   "license": "MIT",
   "scripts": {
@@ -14,7 +18,7 @@
     "start:prod": "node src/common/scripts/create-env.js && node dist/main.js",
     "postinstall": "npm run prestart:prod",
     "lint": "tslint -p tsconfig.json -c tslint.json",
-    "test": "jest",
+    "test": "jest --config=jest.json",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",

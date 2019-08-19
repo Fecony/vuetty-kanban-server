@@ -1,6 +1,7 @@
 # Vuetty Kanban Server
 
-[![Build Status](https://travis-ci.com/Fecony/vuetty-kanban-server.svg?token=KquVGmQ9CBMhcoabSNv9&branch=master)](https://travis-ci.com/Fecony/vuetty-kanban-server)
+[![Build Status](https://travis-ci.com/Fecony/vuetty-kanban-server.svg?token=KquVGmQ9CBMhcoabSNv9&branch=master)](https://travis-ci.com/Fecony/)
+[![jest](https://jestjs.io/img/jest-badge.svg)](https://github.com/facebook/jest)
 
 REST/GraphQL Backend server, used for kanban web app.
 
