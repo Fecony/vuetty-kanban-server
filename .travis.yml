@@ -1,0 +1,14 @@
+langugage: node_js
+node_js:
+  - node
+
+cache:
+  directories:
+    - 'node_modules'
+
+before_script:
+  # Install npm dependencies
+  - npm ci
+
+script:
+  - 'npm run start:prod'
