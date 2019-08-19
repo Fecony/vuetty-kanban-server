@@ -1,0 +1,27 @@
+language: node_js
+node_js:
+  - node
+
+cache:
+  directories:
+    - 'node_modules'
+
+services:
+  - mongodb
+
+before_install:
+  - npm i -g npm@latest
+
+install:
+  # Install npm dependencies
+  - npm ci
+  - sleep 15
+  # Run server
+  - npm run build
+
+jobs:
+  include:
+    - stage: test
+      name: 'Unit Tests'
+      script: npm test
+      after_success: npm test
