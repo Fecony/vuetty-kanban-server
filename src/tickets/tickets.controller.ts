@@ -38,14 +38,14 @@ export class TicketsController {
     return await this.ticketsService.create(body);
   }
 
-  @Put('update')
+  @Put()
   @UseGuards(AuthGuard())
   @UsePipes(new IdValidation())
   async update(@Query('id') id, @Body() body: CreateTicketDTO) {
     return await this.ticketsService.update(id, body);
   }
 
-  @Delete('delete')
+  @Delete()
   @UseGuards(AuthGuard())
   @UsePipes(new IdValidation())
   async deleteTicket(@Query('id') id) {

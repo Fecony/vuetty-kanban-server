@@ -46,8 +46,7 @@ export class UpdateUserInput {
 }
 
 export class Deleted {
-    deleted?: boolean;
-    msg?: string;
+    ok?: boolean;
 }
 
 export abstract class IMutation {

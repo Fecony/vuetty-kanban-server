@@ -40,14 +40,14 @@ export class ProjectsController {
     return await this.projectsService.create(body);
   }
 
-  @Put('update')
+  @Put()
   @UsePipes(new IdValidation())
   @UseGuards(AuthGuard())
   async update(@Query('id') id, @Body() body: CreateProjectDTO) {
     return await this.projectsService.update(id, body);
   }
 
-  @Delete('delete')
+  @Delete()
   @UseGuards(AuthGuard())
   @UsePipes(new IdValidation())
   async delete(@Query('id') id) {

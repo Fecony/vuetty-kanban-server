@@ -91,7 +91,7 @@ export class ProjectsService {
       if (!deletedProject) {
         throw new BadRequestException(`Project with ID: ${ID} doesn't exist`);
       }
-      return { msg: 'OK' };
+      return { ok: true };
     } catch (error) {
       throw new BadRequestException(error.message);
     }
@@ -180,7 +180,7 @@ export class ProjectsService {
 
   async deleteColumn(ID: string, body: any): Promise<IProject> {
     let { column } = body;
-    let defaultColumn = 'FUCKING_UPDATE_ME'; 
+    let defaultColumn = 'FUCKING_UPDATE_ME';
     let project: any = await this.getById(ID);
 
     let isValid = validateColumnName(project.columns, column);

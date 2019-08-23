@@ -45,14 +45,14 @@ export class UsersController {
     return await this.userService.create(body);
   }
 
-  @Put('update')
+  @Put()
   @UseGuards(AuthGuard())
   @UsePipes(new IdValidation())
   async update(@Query('id') id: string, @Body() body: CreateUserDto) {
     return await this.userService.update(id, body);
   }
 
-  @Delete('delete')
+  @Delete()
   @UseGuards(AuthGuard())
   @UsePipes(new IdValidation())
   async delete(@Query('id') id: string) {

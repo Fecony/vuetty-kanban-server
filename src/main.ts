@@ -1,18 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger } from '@nestjs/common';
-import { ConfigService } from './config/config.service';
-const helmet = require('helmet');
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import 'dotenv/config';
+const helmet = require('helmet');
+
+if (process.env.NODE_ENV === 'test') {
+  process.env.MONGO_URL = process.env.MONGO_URL_TEST;
+  console.log('----------TESTING IN PROCESS----------');
+  console.log('using database', process.env.MONGO_URL);
+}
 
 let bootstrap = async () => {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     cors: true,
   });
 
-  const config: ConfigService = app.get(ConfigService);
-  const PORT = config.get('PORT') || 3005;
+  const PORT = process.env.PORT || 3005;
 
   app.use(helmet());
   app.useStaticAssets(join(__dirname, '..', 'public'));
