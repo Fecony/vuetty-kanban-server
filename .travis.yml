@@ -18,6 +18,7 @@ install:
   - sleep 15
   # Run server
   - npm run build
+  - npm run start:test
 
 jobs:
   include:

@@ -13,8 +13,7 @@ type Mutation {
 }
 
 type Deleted {
-  deleted: Boolean
-  msg: String
+  ok: Boolean
 }
 
 type User {

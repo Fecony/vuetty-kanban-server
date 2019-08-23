@@ -4,7 +4,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Model } from 'mongoose';
-import { ObjectID } from 'mongodb';
 import { InjectModel } from '@nestjs/mongoose';
 import { ITicket } from './interfaces/ticket.interface';
 import { CreateTicketDTO } from './dto/create-ticket.dto';
@@ -12,6 +11,7 @@ import { IUser } from '../users/interfaces/user.interface';
 import { IProject } from '../projects/interfaces/project.interface';
 import { prepareMeta } from '../common/utils/prepare-meta.util';
 import { validateColumnName } from '../common/utils/validate-column.utils';
+import { validateMongoId } from '../common/utils/validate-id.utils';
 
 @Injectable()
 export class TicketsService {
@@ -61,23 +61,31 @@ export class TicketsService {
 
   async create(createTicketDTO: CreateTicketDTO): Promise<any> {
     let { project: id, status, assignee } = createTicketDTO;
-    let { columns }: any = await this.projectModel.findOne({ _id: id });
+    let { code, columns } = await this.projectModel.findOne({ _id: id });
+    let lastTicket = await this.ticketsModel.findOne(
+      {},
+      {},
+      { sort: { createdAt: -1 } },
+    );
+
+    let ticket_code = `${code}-0as`;
+
+    if (lastTicket && lastTicket.ticket_code) {
+      ticket_code = getTicketCode(lastTicket.ticket_code, code);
+    }
     let isValid = validateColumnName(columns, status);
 
     if (!isValid) {
       throw new BadRequestException(`Project doesn't have '${status}' column.`);
     }
 
-    const newTicket = await this.ticketsModel(createTicketDTO);
+    let ticket = Object.assign({}, createTicketDTO, { ticket_code });
+    const newTicket = await this.ticketsModel(ticket);
 
     try {
-      // Search for assigned user if exists push ticket to tickets[]
       if (assignee) {
-        if (!ObjectID.isValid(assignee)) {
-          throw new BadRequestException(
-            `Assignee ID: '${assignee}' is not valid.`,
-          );
-        }
+        // Search for assigned user if exists push ticket to tickets[]
+        validateMongoId(assignee);
         await this.usersModel
           .findByIdAndUpdate(
             { _id: assignee },
@@ -88,9 +96,8 @@ export class TicketsService {
           });
       }
       if (id) {
-        if (!ObjectID.isValid(id)) {
-          throw new BadRequestException(`Project ID: '${id}' is not valid.`);
-        }
+        // Add ticket to projects
+        validateMongoId(id);
         await this.projectModel
           .findByIdAndUpdate({ _id: id }, { $push: { tickets: newTicket._id } })
           .exec()
@@ -110,8 +117,29 @@ export class TicketsService {
     }
   }
 
-  async update(ID: string, createTicketDTO: CreateTicketDTO): Promise<ITicket> {
+  async update(ID: string, createTicketDTO: CreateTicketDTO) {
+    let { assignee } = createTicketDTO;
+
     try {
+      if (assignee) {
+        let oldAssigneeId = await this.getById(ID).then(
+          result => result.assignee._id,
+        );
+        validateMongoId(assignee);
+
+        await this.usersModel // Reassign ticket to new user
+          .findByIdAndUpdate({ _id: assignee }, { $push: { tickets: ID } })
+          .catch(err => {
+            throw new BadRequestException(err);
+          });
+
+        await this.usersModel // Remove ticket from old assignee ticket[]
+          .findByIdAndUpdate({ _id: oldAssigneeId }, { $pull: { tickets: ID } })
+          .catch(err => {
+            throw new BadRequestException(err);
+          });
+      }
+
       const updatedTicket = await this.ticketsModel
         .findByIdAndUpdate(ID, createTicketDTO, { new: true })
         .populate('assignee author');
@@ -123,12 +151,29 @@ export class TicketsService {
 
   async delete(ID: string): Promise<any> {
     try {
+      let assigneeId = await this.getById(ID).then(
+        result => result.assignee._id,
+      );
+
+      await this.usersModel // Remove ticket from old assignee ticket[]
+        .findByIdAndUpdate({ _id: assigneeId }, { $pull: { tickets: ID } })
+        .catch(err => {
+          throw new BadRequestException(err);
+        });
+
       const deletedTicket = await this.ticketsModel.findByIdAndRemove(ID);
       if (!deletedTicket)
         throw new BadRequestException(`Ticket with id: ${ID} doesn't exist`);
-      return { msg: 'OK' };
+      return { ok: true };
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
+}
+
+function getTicketCode(lastCode: any, code: string): string {
+  let lastNumber = lastCode.split(`${code}-`).pop();
+  lastNumber += 1;
+  let ticket_code = `${code}-${lastNumber}`;
+  return ticket_code;
 }

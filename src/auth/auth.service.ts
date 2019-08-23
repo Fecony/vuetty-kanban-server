@@ -63,7 +63,10 @@ export class AuthService {
   }
 
   async register(body: CreateUserDto) {
-    return await this.usersService.create(body);
+    let user = await this.usersService.create(body);
+    let data = await this.createToken(user);
+
+    return data;
   }
 
   createToken(userData: CreateUserDto) {
