@@ -44,9 +44,9 @@ npm run start:dev
 ## Running the tests
 
 ```
-npm run start:test      -   Start server in testing env
-npm run test            -   Unit Tests
-npm run test:e2e        -   e2e Tests
+npm run build           -   Build server
+npm run test            -   Run Unit Tests
+npm run test:e2e        -   Run e2e Tests
 ```
 
 ## Deployment

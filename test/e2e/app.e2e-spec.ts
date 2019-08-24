@@ -1,12 +1,28 @@
-import 'dotenv/config';
 import request from 'supertest';
-import { app } from './constants';
+import { Test } from '@nestjs/testing';
+import { AppModule } from '../../src/app.module';
+import { INestApplication } from '@nestjs/common';
 
 describe('Application', () => {
-  it('should return pong', () => {
-    return request(app)
-      .get('')
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = module.createNestApplication();
+    await app.init();
+  });
+
+  it(`Should return pong! `, () => {
+    return request(app.getHttpServer())
+      .get('/')
       .expect('pong!')
       .expect(200);
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 });

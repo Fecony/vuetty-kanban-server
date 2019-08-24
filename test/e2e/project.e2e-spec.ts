@@ -1,8 +1,13 @@
-import axios from 'axios';
+import 'dotenv/config';
 import request from 'supertest';
+import { Test } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
 import { LoginUserDto } from '../../src/users/dto/login-user.dto';
-import { app, database } from './constants';
 import { getFormattedColumnName } from '../../src/common/utils/column-name.utils';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ProjectsModule } from '../../src/projects/projects.module';
+import { AuthModule } from '../../src/auth/auth.module';
+
 const mongoose = require('mongoose');
 
 let currentUser;
@@ -16,7 +21,7 @@ let user: LoginUserDto = {
 let project = {
   title: 'Testing Project',
   description: 'Testing project description',
-  author: 'da',
+  author: null,
 };
 
 let column = {
@@ -25,32 +30,47 @@ let column = {
   },
 };
 
-beforeAll(async () => {
-  await mongoose.connect(database, {
-    useNewUrlParser: true,
-  });
-  await mongoose.connection.db.dropDatabase();
-
-  await axios
-    .post(`${app}/auth/register`, user)
-    .then(({ data }) => {
-      currentUser = Object.assign({}, data.user, {
-        token: data.token,
-      });
-      project.author = currentUser.id;
-    })
-    .catch(error => {
-      console.log('ERROR: ', error);
-    });
-});
-
-afterAll(async done => {
-  await mongoose.disconnect(done);
-});
-
 describe('Projects Controller', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    await mongoose.connect(process.env.MONGO_URL_TEST, {
+      useNewUrlParser: true,
+    });
+    await mongoose.connection.db.dropDatabase();
+
+    const module = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRootAsync({
+          useFactory: async () => ({
+            uri: process.env.MONGO_URL_TEST,
+            useNewUrlParser: true,
+            useCreateIndex: true,
+            useFindAndModify: false,
+          }),
+        }),
+        ProjectsModule,
+        AuthModule,
+      ],
+    }).compile();
+
+    app = module.createNestApplication();
+    await app.init();
+
+    await request(app.getHttpServer()) // Create user
+      .post('/auth/register')
+      .set('Accept', 'application/json')
+      .send(user)
+      .expect(({ body }) => {
+        currentUser = Object.assign({}, body.user, {
+          token: body.token,
+        });
+        project.author = currentUser.id;
+      });
+  });
+
   it('should list empty project []', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .get('/projects')
       .expect(({ body }) => {
         expect(body.meta.page).toEqual(1);
@@ -60,7 +80,7 @@ describe('Projects Controller', () => {
   });
 
   it('should create project', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .post('/projects')
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -79,7 +99,7 @@ describe('Projects Controller', () => {
   });
 
   it('should return project by ID', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .get(`/projects/${currentProject._id}`)
       .expect(({ body }) => {
         expect(body._id).toBeDefined();
@@ -95,7 +115,7 @@ describe('Projects Controller', () => {
 
   it('should update project', () => {
     let updatedDesc = 'Testing Updated project description';
-    return request(app)
+    return request(app.getHttpServer())
       .put(`/projects?id=${currentProject._id}`)
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -116,7 +136,7 @@ describe('Projects Controller', () => {
   });
 
   it('should create project column', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .put(`/projects/column?id=${currentProject._id}`)
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -128,7 +148,7 @@ describe('Projects Controller', () => {
   });
 
   it('should fail on adding already existing column', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .put(`/projects/column?id=${currentProject._id}`)
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -140,7 +160,7 @@ describe('Projects Controller', () => {
 
   it('should contain new column', () => {
     let name = getFormattedColumnName(column.column.name);
-    return request(app)
+    return request(app.getHttpServer())
       .get(`/projects/${currentProject._id}`)
       .expect(({ body: { columns } }) => {
         expect(columns[0]).toEqual(
@@ -156,7 +176,7 @@ describe('Projects Controller', () => {
   it('should update column', () => {
     let name = getFormattedColumnName(column.column.name);
     let updatedColumn = { column: { name: 'updated name' } };
-    return request(app)
+    return request(app.getHttpServer())
       .patch(`/projects/${currentProject._id}?column=${name}`)
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -170,7 +190,7 @@ describe('Projects Controller', () => {
   it('should contain updated column', () => {
     let updatedColumn = { column: { name: 'updated name' } };
     let name = getFormattedColumnName(updatedColumn.column.name);
-    return request(app)
+    return request(app.getHttpServer())
       .get(`/projects/${currentProject._id}`)
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -187,7 +207,7 @@ describe('Projects Controller', () => {
 
   it('should delete column', () => {
     let updatedColumnName = { column: 'updated name' };
-    return request(app)
+    return request(app.getHttpServer())
       .delete(`/projects/column?id=${currentProject._id}`)
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -201,7 +221,7 @@ describe('Projects Controller', () => {
   it('should fail delete', () => {
     let updatedColumnName = { column: 'updated name' };
     let name = getFormattedColumnName(updatedColumnName.column);
-    return request(app)
+    return request(app.getHttpServer())
       .delete(`/projects/column?id=${currentProject._id}`)
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -215,7 +235,7 @@ describe('Projects Controller', () => {
   });
 
   it('should delete project', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .delete(`/projects?id=${currentProject._id}`)
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -226,7 +246,7 @@ describe('Projects Controller', () => {
   });
 
   it('should return mongoose error message when using invalid _id', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .delete('/projects?id=123')
       .set('Authorization', `Bearer ${currentUser.token}`)
       .set('Accept', 'application/json')
@@ -234,5 +254,10 @@ describe('Projects Controller', () => {
         expect(body.message).toBe("ID: '123' is not valid.");
       })
       .expect(400);
+  });
+
+  afterAll(async done => {
+    await app.close();
+    await mongoose.disconnect(done);
   });
 });
