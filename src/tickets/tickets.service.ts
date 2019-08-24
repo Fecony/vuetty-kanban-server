@@ -68,7 +68,7 @@ export class TicketsService {
       { sort: { createdAt: -1 } },
     );
 
-    let ticket_code = `${code}-0as`;
+    let ticket_code = `${code}-0`;
 
     if (lastTicket && lastTicket.ticket_code) {
       ticket_code = getTicketCode(lastTicket.ticket_code, code);

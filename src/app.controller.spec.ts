@@ -18,7 +18,7 @@ describe('AppController', () => {
 
   describe('ping', () => {
     it('should return string "pong!"', async () => {
-      const result = 'pong';
+      const result = 'pong!';
 
       jest.spyOn(appService, 'ping').mockImplementation(() => result);
 

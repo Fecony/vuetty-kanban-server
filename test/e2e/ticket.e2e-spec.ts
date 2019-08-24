@@ -1,8 +1,13 @@
-import axios from 'axios';
 import request from 'supertest';
 import { LoginUserDto } from '../../src/users/dto/login-user.dto';
 import { CreateUserDto } from '../../src/users/dto/create-user.dto';
-import { app, database } from './constants';
+import { INestApplication } from '@nestjs/common';
+import { AuthModule } from '../../src/auth/auth.module';
+import { TicketsModule } from '../../src/tickets/tickets.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Test } from '@nestjs/testing';
+import { ProjectsModule } from '../../src/projects/projects.module';
+
 const mongoose = require('mongoose');
 
 let createdAdmin;
@@ -41,58 +46,74 @@ let ticket = {
   project: null,
 };
 
-beforeAll(async () => {
-  await mongoose.connect(database, {
-    useNewUrlParser: true,
-  });
-  await mongoose.connection.db.dropDatabase();
+describe.only('Ticket Controller', () => {
+  let app: INestApplication;
 
-  await axios // Create 'admin'
-    .post(`${app}/auth/register`, admin)
-    .then(async ({ data }) => {
-      createdAdmin = Object.assign({}, data.user, {
-        token: data.token,
-      });
-      var config = {
-        headers: { Authorization: 'Bearer ' + createdAdmin.token },
-      };
-      project.author = data.user.id;
-      ticket.author = data.user.id;
-
-      return await axios // Create Project
-        .post(`${app}/projects`, project, config)
-        .then(async ({ data }) => {
-          createdProject = data;
-          ticket.project = data._id;
-
-          return await axios // Create column
-            .put(
-              `${app}/projects/column?id=${createdProject._id}`,
-              column,
-              config,
-            )
-            .then(async () => {
-              return await axios // Create user
-                .post(`${app}/users`, newUser, config)
-                .then(({ data }) => {
-                  createdUser = data;
-                  ticket.assignee = data._id;
-                });
-            });
-        });
-    })
-    .catch(error => {
-      console.log('ERROR: ', error);
+  beforeAll(async () => {
+    await mongoose.connect(process.env.MONGO_URL_TEST, {
+      useNewUrlParser: true,
     });
-});
+    await mongoose.connection.db.dropDatabase();
 
-afterAll(async done => {
-  await mongoose.disconnect(done);
-});
+    const module = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRootAsync({
+          useFactory: async () => ({
+            uri: process.env.MONGO_URL_TEST,
+            useNewUrlParser: true,
+            useCreateIndex: true,
+            useFindAndModify: false,
+          }),
+        }),
+        TicketsModule,
+        ProjectsModule,
+        AuthModule,
+      ],
+    }).compile();
 
-describe('Tickets Controller', () => {
+    app = module.createNestApplication();
+    await app.init();
+
+    await request(app.getHttpServer()) // Create admin
+      .post('/auth/register')
+      .set('Accept', 'application/json')
+      .send(admin)
+      .expect(({ body }) => {
+        createdAdmin = Object.assign({}, body.user, {
+          token: body.token,
+        });
+        project.author = body.user.id;
+        ticket.author = body.user.id;
+      });
+
+    await request(app.getHttpServer()) // Create user
+      .post('/users')
+      .set('Authorization', `Bearer ${createdAdmin.token}`)
+      .send(newUser)
+      .expect(({ body }) => {
+        createdUser = body;
+        ticket.assignee = body._id;
+      });
+
+    await request(app.getHttpServer()) // Create project
+      .post('/projects')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ${createdAdmin.token}`)
+      .send(project)
+      .expect(async ({ body }) => {
+        createdProject = body;
+        ticket.project = body._id;
+      });
+
+    await request(app.getHttpServer()) // Create column
+      .put(`/projects/column?id=${createdProject._id}`)
+      .set('Authorization', `Bearer ${createdAdmin.token}`)
+      .send(column)
+      .expect(200);
+  });
+
   it('should return empty array of tickets[]', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .get('/tickets')
       .expect(({ body: { meta, data } }) => {
         expect(meta.page).toEqual(1);
@@ -101,11 +122,11 @@ describe('Tickets Controller', () => {
       .expect(200);
   });
 
-  it('should create ticket', () => {
-    return request(app)
+  it('should create ticket', async () => {
+    return await request(app.getHttpServer())
       .post('/tickets')
-      .set('Authorization', `Bearer ${createdAdmin.token}`)
       .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ${createdAdmin.token}`)
       .send(ticket)
       .expect(({ body }) => {
         createdTicket = body;
@@ -119,8 +140,93 @@ describe('Tickets Controller', () => {
       .expect(201);
   });
 
+  it('should fail creating ticket with not existing column', async () => {
+    let nticket = ticket;
+    nticket.status = 'not existing';
+    return await request(app.getHttpServer())
+      .post('/tickets')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ${createdAdmin.token}`)
+      .send(nticket)
+      .expect(({ body }) => {
+        expect(body.message).toBe(
+          `Project doesn't have '${nticket.status}' column.`,
+        );
+      })
+      .expect(400);
+  });
+
+  it('should return ticket by ID', () => {
+    return request(app.getHttpServer())
+      .get(`/tickets/${createdTicket._id}`)
+      .expect(({ body }) => {
+        expect(body._id).toBeDefined();
+        expect(body._id).toBe(createdTicket._id);
+        expect(body.title).toBe(createdTicket.title);
+        expect(body.description).toEqual(createdTicket.description);
+        expect(body.author._id).toBe(createdAdmin.id);
+        expect(body.assignee._id).toBe(createdUser._id);
+        expect(body.project._id).toBe(createdProject._id);
+        expect(body.ticket_code).toBeDefined();
+        expect(body.ticket_code).toBe('TP-0');
+      })
+      .expect(200);
+  });
+
+  it('user should have ticket in tickets[]', () => {
+    return request(app.getHttpServer())
+      .get(`/users/${createdUser._id}`)
+      .set('Accept', 'application/json')
+      .expect(({ body }) => {
+        expect(body.tickets).toContainEqual(
+          expect.objectContaining({ _id: createdTicket._id }),
+        );
+      })
+      .expect(200);
+  });
+
+  it('should update ticket', () => {
+    let updatedDesc = 'Testing Updated ticket description';
+    return request(app.getHttpServer())
+      .put(`/tickets?id=${createdTicket._id}`)
+      .set('Authorization', `Bearer ${createdAdmin.token}`)
+      .set('Accept', 'application/json')
+      .send({
+        description: updatedDesc,
+      })
+      .expect(({ body }) => {
+        expect(body.description).not.toEqual(createdTicket.description);
+        expect(body.description).toEqual(updatedDesc);
+        createdTicket = body;
+      })
+      .expect(200);
+  });
+
+  it('should delete ticket', () => {
+    return request(app.getHttpServer())
+      .delete(`/tickets?id=${createdTicket._id}`)
+      .set('Authorization', `Bearer ${createdAdmin.token}`)
+      .set('Accept', 'application/json')
+      .expect(({ body }) => {
+        expect(body.ok).toBeTruthy();
+      })
+      .expect(200);
+  });
+
+  it('user should not contain removed ticket in tickets[]', () => {
+    return request(app.getHttpServer())
+      .get(`/users/${createdUser._id}`)
+      .set('Accept', 'application/json')
+      .expect(({ body }) => {
+        expect(body.tickets).not.toContainEqual(
+          expect.objectContaining({ _id: createdTicket._id }),
+        );
+      })
+      .expect(200);
+  });
+
   it('should return mongoose error message when using invalid _id', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .delete('/tickets?id=123')
       .set('Authorization', `Bearer ${createdAdmin.token}`)
       .set('Accept', 'application/json')
@@ -128,5 +234,10 @@ describe('Tickets Controller', () => {
         expect(body.message).toBe("ID: '123' is not valid.");
       })
       .expect(400);
+  });
+
+  afterAll(async done => {
+    await app.close();
+    await mongoose.disconnect(done);
   });
 });

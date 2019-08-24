@@ -1,8 +1,14 @@
-import axios from 'axios';
+import 'dotenv/config';
 import request from 'supertest';
+import { Test } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AuthModule } from '../../src/auth/auth.module';
 import { LoginUserDto } from '../../src/users/dto/login-user.dto';
 import { CreateUserDto } from '../../src/users/dto/create-user.dto';
-import { app, database } from './constants';
+import { UsersModule } from '../../src/users/users.module';
+import { TicketSchema } from '../../src/tickets/schemas/ticket.schema';
+
 const mongoose = require('mongoose');
 
 let adminUser;
@@ -22,30 +28,47 @@ let newUser: CreateUserDto = {
 };
 const testImage = `${__dirname}/../images.png`;
 
-beforeAll(async () => {
-  await mongoose.connect(database, {
-    useNewUrlParser: true,
-  });
-  await mongoose.connection.db.dropDatabase();
-  await axios
-    .post(`${app}/auth/register`, admin)
-    .then(({ data }) => {
-      adminUser = Object.assign({}, data.user, {
-        token: data.token,
-      });
-    })
-    .catch(error => {
-      console.log('ERROR: ', error);
-    });
-});
-
-afterAll(async done => {
-  await mongoose.disconnect(done);
-});
-
 describe('Users Controller', () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    await mongoose.connect(process.env.MONGO_URL_TEST, {
+      useNewUrlParser: true,
+    });
+    mongoose.model('Ticket', TicketSchema); // IDK why
+    await mongoose.connection.db.dropDatabase();
+
+    const module = await Test.createTestingModule({
+      imports: [
+        MongooseModule.forRootAsync({
+          useFactory: async () => ({
+            uri: process.env.MONGO_URL_TEST,
+            useNewUrlParser: true,
+            useCreateIndex: true,
+            useFindAndModify: false,
+          }),
+        }),
+        UsersModule,
+        AuthModule,
+      ],
+    }).compile();
+
+    app = module.createNestApplication();
+    await app.init();
+
+    await request(app.getHttpServer()) // Create admin
+      .post('/auth/register')
+      .set('Accept', 'application/json')
+      .send(admin)
+      .expect(({ body }) => {
+        adminUser = Object.assign({}, body.user, {
+          token: body.token,
+        });
+      });
+  });
+
   it('should return array of users containing new admin user', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .get('/users')
       .expect(({ body: { meta, data } }) => {
         expect(data).toEqual(
@@ -64,7 +87,7 @@ describe('Users Controller', () => {
   });
 
   it('should create user', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .post('/users')
       .set('Authorization', `Bearer ${adminUser.token}`)
       .set('Accept', 'application/json')
@@ -81,7 +104,7 @@ describe('Users Controller', () => {
   });
 
   it('should fail on creating same user', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .post('/users')
       .set('Authorization', `Bearer ${adminUser.token}`)
       .set('Accept', 'application/json')
@@ -95,7 +118,7 @@ describe('Users Controller', () => {
   });
 
   it('should return user by ID', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .get(`/users/${createdUser._id}`)
       .expect(({ body }) => {
         expect(body._id).toBeDefined();
@@ -111,7 +134,7 @@ describe('Users Controller', () => {
   it('should update user', () => {
     let role = 'Middle Frontend Developer';
     let username = 'Elliot';
-    return request(app)
+    return request(app.getHttpServer())
       .put(`/users?id=${createdUser._id}`)
       .set('Authorization', `Bearer ${adminUser.token}`)
       .set('Accept', 'application/json')
@@ -131,7 +154,7 @@ describe('Users Controller', () => {
   });
 
   it('should upload avatar', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .post(`/users/${createdUser._id}/avatar`)
       .set('Authorization', `Bearer ${adminUser.token}`)
       .attach('avatar', testImage, { contentType: 'application/octet-stream' })
@@ -141,7 +164,7 @@ describe('Users Controller', () => {
   });
 
   it('should contain avatar name', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .get(`/users/${createdUser._id}`)
       .expect(({ body }) => {
         expect(body.profilePicture).toBeDefined();
@@ -152,7 +175,7 @@ describe('Users Controller', () => {
   });
 
   it('should return avatar by name', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .get(`/users/avatars/${createdUser.profilePicture}`)
       .set('Authorization', `Bearer ${adminUser.token}`)
       .expect(({ body }) => {
@@ -162,7 +185,7 @@ describe('Users Controller', () => {
   });
 
   it('should delete user and return ok', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .delete(`/users?id=${createdUser._id}`)
       .set('Authorization', `Bearer ${adminUser.token}`)
       .set('Accept', 'application/json')
@@ -173,7 +196,7 @@ describe('Users Controller', () => {
   });
 
   it('should return error message when trying to delete not existing user', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .delete(`/users?id=${createdUser._id}`)
       .set('Authorization', `Bearer ${adminUser.token}`)
       .set('Accept', 'application/json')
@@ -186,7 +209,7 @@ describe('Users Controller', () => {
   });
 
   it('should return mongoose error message when using invalid _id', () => {
-    return request(app)
+    return request(app.getHttpServer())
       .delete('/users?id=123')
       .set('Authorization', `Bearer ${adminUser.token}`)
       .set('Accept', 'application/json')
@@ -194,5 +217,10 @@ describe('Users Controller', () => {
         expect(body.message).toBe("ID: '123' is not valid.");
       })
       .expect(400);
+  });
+
+  afterAll(async done => {
+    await app.close();
+    await mongoose.disconnect(done);
   });
 });
